@@ -28,3 +28,14 @@ https://github.com/philsquared/Catch/blob/master/docs/tutorial.md
 To get colored output in the Eclipse console, install the Eclipse
 plugin "Local Terminal". Linux only. For details see
 http://stackoverflow.com/questions/6286701/an-eclipse-console-view-that-respects-ansi-color-codes
+
+Memory access profile (x64, GCC only):
+
+    cmake --preset x64_profile
+    cmake --build --preset debug-x64-profile
+    ./cmake-build/x64_profile/Debug/lib-test-cases_x64 "[profile]"
+
+This preset compiles the sblib with compiler generated calls for every load and store and counts
+them in test/sblib/src/access_profile.cpp. The sources of the sblib stay unchanged. The test
+src/knx/test_mask0701_profile.cpp prints the accesses of typical operations with a MultiSensorAktor
+like configuration. All other test cases run in this build as well.

@@ -29,6 +29,18 @@
             }
         },
         {
+            "name": "x64_profile",
+            "displayName": "x64 access profile Target",
+            "description": "Counts all memory accesses of the sblib, see test/sblib/inc/access_profile.h",
+            "hidden": false,
+            "inherits": [
+                "x64"
+            ],
+            "cacheVariables": {
+                "SBLIB_TEST_ACCESS_PROFILE": "ON"
+            }
+        },
+        {
             "name": "x86_logging",
             "displayName": "x86 logging Target",
             "description": "Most of logging enabled",
@@ -126,6 +138,30 @@
             "configuration": "Release",
             "displayName": "x64 Target Release Build",
             "description": "Build x64 target in Release configuration",
+            "hidden": false,
+            "verbose": true,
+            "targets": [
+                "lib-test-cases_x64"
+            ]
+        },
+        {
+            "name": "debug-x64-profile",
+            "configurePreset": "x64_profile",
+            "configuration": "Debug",
+            "displayName": "x64 access profile Debug Build",
+            "description": "Build x64 access profile in Debug configuration",
+            "hidden": false,
+            "verbose": true,
+            "targets": [
+                "lib-test-cases_x64"
+            ]
+        },
+        {
+            "name": "release-x64-profile",
+            "configurePreset": "x64_profile",
+            "configuration": "Release",
+            "displayName": "x64 access profile Release Build",
+            "description": "Build x64 access profile in Release configuration",
             "hidden": false,
             "verbose": true,
             "targets": [

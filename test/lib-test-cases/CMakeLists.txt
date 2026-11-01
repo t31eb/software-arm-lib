@@ -26,6 +26,8 @@ if (NOT EXISTS "${SBLIB_TEST_PATH}")
     message(FATAL_ERROR "sblib-test project not found. Check setting of SBLIB_TEST_PATH (${SBLIB_TEST_PATH})")
 endif()
 
+option(SBLIB_TEST_ACCESS_PROFILE "Build the x64 target with the memory access profile" OFF)
+
 # Enable testing
 include(CTest)
 
@@ -143,6 +145,24 @@ elseif(SBLIB_ARCHITECTURE STREQUAL "x64")
         -m64
     )
     target_link_libraries(${TARGET_X64} sblib-test_x64)
+
+    # Count every memory access of the sblib, see test/sblib/inc/access_profile.h
+    if(SBLIB_TEST_ACCESS_PROFILE)
+        target_compile_options(sblib_x64 PRIVATE
+            -fsanitize=kernel-address
+            --param=asan-instrumentation-with-call-threshold=0
+            --param=asan-stack=0
+            --param=asan-globals=0
+        )
+        target_sources(${TARGET_X64} PRIVATE
+            ${SBLIB_TEST_PATH}/inc/access_profile.h
+            ${SBLIB_TEST_PATH}/src/access_profile.cpp
+            src/knx/test_mask0701_profile.cpp
+        )
+        target_link_options(${TARGET_X64} PRIVATE
+            -Wl,--wrap=memcpy,--wrap=memmove,--wrap=memset
+        )
+    endif()
 
     # Register test to run with JUnit XML output
     add_test(NAME ${TARGET_X64}_junit
