@@ -201,34 +201,33 @@ TEST_CASE("MASK0701 persistence", "[poc][loadstate]")
         REQUIRE(f.bcu->userEeprom->isModified());
 
         f.bcu->state = TLayer4::CLOSED;
+        setMillis(millis() + 51); // writeDelayElapsed()
         f.bcu->loop();
         REQUIRE(iap_calls[I_ERASE] == erases + 1);
         REQUIRE_FALSE(f.bcu->userEeprom->isModified());
     }
 }
 
-TEST_CASE("UserEeprom::writeDelayElapsed() is always true for a modified mirror", "[poc][userEeprom]")
+TEST_CASE("UserEeprom::writeDelayElapsed() waits 50ms after a modification", "[poc][userEeprom]")
 {
     F f;
     UserEeprom* eeprom = f.bcu->userEeprom;
     setMillis(1000);
 
-    SECTION("modified: elapsed right away, the 50ms delay never applies (|= instead of &=)")
+    SECTION("modified: elapsed after the delay")
     {
         eeprom->modified(true);
         REQUIRE(eeprom->writeUserEepromTime == 1050);
-        REQUIRE(eeprom->writeDelayElapsed());
+        REQUIRE_FALSE(eeprom->writeDelayElapsed());
         setMillis(1049);
-        REQUIRE(eeprom->writeDelayElapsed());
+        REQUIRE_FALSE(eeprom->writeDelayElapsed());
         setMillis(1051);
         REQUIRE(eeprom->writeDelayElapsed());
     }
 
-    SECTION("not modified: elapsed as soon as millis() is positive")
+    SECTION("not modified: never elapsed")
     {
         eeprom->modified(false);
-        REQUIRE(eeprom->writeDelayElapsed());
-        setMillis(0);
         REQUIRE_FALSE(eeprom->writeDelayElapsed());
     }
 }

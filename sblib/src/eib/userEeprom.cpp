@@ -215,7 +215,7 @@ void UserEeprom::modified(const bool newModified)
 bool UserEeprom::writeDelayElapsed() const
 {
     bool elapsed = userEepromModified;
-    elapsed |= ((int)millis() - (int)writeUserEepromTime) > 0;
+    elapsed &= ((int)millis() - (int)writeUserEepromTime) > 0;
     return (elapsed);
 }
 
