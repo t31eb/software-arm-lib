@@ -37,11 +37,6 @@ const std::vector<PropertyCase> propertyCases = {
     {OT_ASSOC_TABLE, PID_MCB_TABLE, F::USER_EEPROM_FIRST + 0x3AC, {1, 2, 3, 4, 5, 6, 7, 8}, {1, 2, 3, 4, 5, 6, 7, 8}},
     {OT_APPLICATION, PID_MCB_TABLE, F::USER_EEPROM_FIRST + 0x3B4, {1, 2, 3, 4, 5, 6, 7, 8}, {1, 2, 3, 4, 5, 6, 7, 8}},
 };
-
-Data reversed(Data data)
-{
-    return Data(data.rbegin(), data.rend());
-}
 }
 
 TEST_CASE("MASK0701 properties and memory access the same bytes", "[poc][properties]")
@@ -59,7 +54,7 @@ TEST_CASE("MASK0701 properties and memory access the same bytes", "[poc][propert
         }
     }
 
-    SECTION("property write -> memory read, every property write is reversed, also PDT_GENERIC_xx")
+    SECTION("property write -> memory read")
     {
         for (const auto& [objectIdx, id, address, memory, onTheWire] : propertyCases)
         {
@@ -73,16 +68,16 @@ TEST_CASE("MASK0701 properties and memory access the same bytes", "[poc][propert
             f.propertyWrite(objectIdx, id, onTheWire);
             INFO("object " << static_cast<int>(objectIdx) << " property " << static_cast<int>(id));
             REQUIRE(f.bcu->userEeprom->isModified());
-            REQUIRE(f.memoryRead(address, static_cast<uint8_t>(memory.size())).data == reversed(onTheWire));
+            REQUIRE(f.memoryRead(address, static_cast<uint8_t>(memory.size())).data == memory);
         }
     }
 
-    SECTION("PDT_GENERIC_xx: property write followed by property read returns the bytes reversed")
+    SECTION("PDT_GENERIC_xx: property write followed by property read returns the value")
     {
         F f;
         const Data value = {1, 2, 3, 4, 5, 6};
-        REQUIRE(f.propertyWrite(OT_DEVICE, PID_HARDWARE_TYPE, value).data == reversed(reversed(value)));
-        REQUIRE(f.propertyRead(OT_DEVICE, PID_HARDWARE_TYPE).data == reversed(value));
+        REQUIRE(f.propertyWrite(OT_DEVICE, PID_HARDWARE_TYPE, value).data == value);
+        REQUIRE(f.propertyRead(OT_DEVICE, PID_HARDWARE_TYPE).data == value);
     }
 
     SECTION("PDT_UNSIGNED_INT: property write followed by property read returns the value")

@@ -537,8 +537,16 @@ bool PropertiesBCU2::propertyValueWriteTelegram(const int objectIdx, const Prope
         const int size = def->size();
         len = count * size;
         DB_PROPERTIES(serial.print("propertyValueWriteTelegram: "); printObjectIdx(objectIdx); serial.print(" "); printPropertyID(propertyId);serial.println(););
-        reverseCopy(valuePtr + start * size, data, len);
-        reverseCopy(sendBuffer + 12, valuePtr + start * size, len);
+        if (type < PDT_CHAR_BLOCK)
+        {
+            reverseCopy(valuePtr + start * size, data, len);
+            reverseCopy(sendBuffer + 12, valuePtr + start * size, len);
+        }
+        else
+        {
+            memcpy(valuePtr + start * size, data, len);
+            memcpy(sendBuffer + 12, valuePtr + start * size, len);
+        }
         if (def->isEepromPointer())
             bcu->userEeprom->modified(true);
     }
