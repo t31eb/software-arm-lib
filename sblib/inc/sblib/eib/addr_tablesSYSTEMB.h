@@ -31,6 +31,14 @@ public:
      */
     int indexOfAddr(int addr) override;
 
+    /**
+     * Get total number of address entries
+     * @return Total number of address entries including own address
+     *
+     * @brief Unlike the other BCUs, the number of entries takes the first two bytes of the table, high byte first.
+     */
+    uint16_t addrCount() override;
+
 private:
     SYSTEMB* bcu;
 };

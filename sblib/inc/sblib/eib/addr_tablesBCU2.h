@@ -54,12 +54,6 @@ public:
      */
     uint8_t* assocTable() override;
 
-    /**
-     * Get total number of address entries
-     * @return Total number of address entries including own address
-     */
-    uint16_t addrCount() override;
-
 private:
     BCU2* bcu;
 };

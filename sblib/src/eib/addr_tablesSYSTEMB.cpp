@@ -29,3 +29,9 @@ int AddrTablesSYSTEMB::indexOfAddr(const int addr)
 
     return -1;
 }
+
+uint16_t AddrTablesSYSTEMB::addrCount()
+{
+    const uint8_t* tab = addrTable();
+    return (makeWord(tab[0], tab[1]));
+}

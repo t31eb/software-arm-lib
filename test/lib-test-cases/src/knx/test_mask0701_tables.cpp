@@ -48,9 +48,9 @@ TEST_CASE("MASK0701 tables after a download", "[poc][tables]")
         REQUIRE(tables->indexOfAddr(F::PHANTOM_GROUP_ADDRESS) == -1);
     }
 
-    SECTION("addrCount() of BCU2 reads a little endian word over count and physical address")
+    SECTION("addrCount() is the first byte of the table")
     {
-        REQUIRE(tables->addrCount() == makeWord(HIGH_BYTE(F::OWN_ADDRESS), 3));
+        REQUIRE(tables->addrCount() == 3);
     }
 
     SECTION("firstObjectAddr() uses the association table")
@@ -122,4 +122,17 @@ TEST_CASE("MASK0701 load states inside the table area (issue #112)", "[poc][tabl
         REQUIRE(f.bcu->addrTables->addrTable() == nullptr);
         REQUIRE_FALSE(f.bcu->applicationRunning());
     }
+}
+
+TEST_CASE("SYSTEMB address table has a big endian word as length", "[poc][tables]")
+{
+    IAP_Init_Flash(0xff);
+    SYSTEMB bcu;
+
+    constexpr uint16_t ADDR_TABLE_ADDRESS = 0x3400;
+    uint8_t* table = &bcu.userEeprom->userEepromData[ADDR_TABLE_ADDRESS - bcu.userEeprom->startAddr()];
+    bcu.userEeprom->addrTabAddr() = ADDR_TABLE_ADDRESS;
+    table[0] = 0x01;
+    table[1] = 0x02;
+    REQUIRE(bcu.addrTables->addrCount() == 0x0102);
 }

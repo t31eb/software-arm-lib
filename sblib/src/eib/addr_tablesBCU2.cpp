@@ -44,10 +44,3 @@ uint8_t* AddrTablesBCU2::assocTable()
     const uint8_t* addr = (uint8_t*) &bcu->userEeprom->assocTabAddr();
     return bcu->userMemoryPtr(makeWord(*(addr + 1), *addr));
 }
-
-uint16_t AddrTablesBCU2::addrCount()
-{
-    const uint8_t* ptrAddrTable = addrTable();
-    const uint16_t count = makeWord(*(ptrAddrTable + 1), *ptrAddrTable);
-    return (count);
-}
