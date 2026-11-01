@@ -33,4 +33,7 @@ set(SBLIB_LIB_TEST_CASES_SRC
         src/knx/test_memory.cpp
         src/knx/test_user_eeprom.h
         src/knx/test_user_eeprom.cpp
+        src/knx/mask0701_fixture.h
+        src/knx/mask0701_fixture.cpp
+        src/knx/test_mask0701_memory.cpp
 )
