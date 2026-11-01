@@ -43,9 +43,9 @@ TEST_CASE("MASK0701 tables after a download", "[poc][tables]")
         REQUIRE(tables->indexOfAddr(0x0108) == -1); // GROUP_ADDRESS_1 in little endian
     }
 
-    SECTION("indexOfAddr() scans one entry too many, the count includes the physical address")
+    SECTION("indexOfAddr() stops at the end of the table, the count includes the physical address")
     {
-        REQUIRE(tables->indexOfAddr(F::PHANTOM_GROUP_ADDRESS) == 3);
+        REQUIRE(tables->indexOfAddr(F::PHANTOM_GROUP_ADDRESS) == -1);
     }
 
     SECTION("addrCount() of BCU2 reads a little endian word over count and physical address")
