@@ -29,6 +29,10 @@ enum IAP_Function
 };
 
 extern int iap_calls[6];
+
+#define IAP_PROGRAM_LOG_SIZE 64
+extern unsigned int iap_program_log[IAP_PROGRAM_LOG_SIZE]; //!< flash offsets of the last RAM to flash copies, in order
+extern unsigned int iap_program_log_count;                 //!< number of entries in iap_program_log
 void IAP_Init_Flash(unsigned char value);
 void IAP_Call (uintptr_t * cmd, uintptr_t * stat);
 

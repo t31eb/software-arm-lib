@@ -587,12 +587,14 @@ bool BcuDefault::flushUserMemory(const UsrCallbackType reason) const
         usrCallback->Notify(reason);
     }
 
-    userEeprom->writeUserEeprom();
-
+    // The user EEPROM holds the load states, they have to be persisted last.
+    // A power loss in between must not leave a loaded state with missing parameters.
     if (memMapper)
     {
         memMapper->doFlash();
     }
+
+    userEeprom->writeUserEeprom();
 
     bus->resume();
     return (true);

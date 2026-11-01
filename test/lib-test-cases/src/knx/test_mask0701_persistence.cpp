@@ -164,6 +164,24 @@ TEST_CASE("MASK0701 persistence", "[poc][loadstate]")
         REQUIRE(F::flashByte(F::USER_EEPROM_FIRST + 0x0D) == 0x00);
     }
 
+    SECTION("the load states of the user EEPROM are written after the parameters of the MemMapper")
+    {
+        constexpr unsigned int USER_EEPROM_FLASH = 0xF000;
+
+        f.downloadTables();
+        f.memoryWrite(F::MAPPER_START, {0x11, 0x22});
+        iap_program_log_count = 0;
+        flush(f);
+
+        REQUIRE(iap_program_log_count > 3);
+        REQUIRE(iap_program_log[0] < USER_EEPROM_FLASH);
+        REQUIRE(iap_program_log[iap_program_log_count - 1] >= USER_EEPROM_FLASH);
+        for (unsigned int i = 0; i < iap_program_log_count - 3; i++)
+        {
+            REQUIRE(iap_program_log[i] < USER_EEPROM_FLASH); // the user EEPROM takes the last 3 writes
+        }
+    }
+
     SECTION("the last byte is the page marker, it is always cleared")
     {
         f.memoryWrite(F::USER_EEPROM_LAST, {0x5A});

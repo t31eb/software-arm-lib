@@ -73,6 +73,9 @@ void IAP_Init_Flash(unsigned char value)
     memset(FLASH, value, FLASH_SIZE);
 }
 
+unsigned int iap_program_log[IAP_PROGRAM_LOG_SIZE];
+unsigned int iap_program_log_count = 0;
+
 void IAP_Call (uintptr_t * cmd, uintptr_t * stat)
 {
     unsigned int i;
@@ -124,6 +127,10 @@ void IAP_Call (uintptr_t * cmd, uintptr_t * stat)
         ram = (uint8_t *) (* (cmd + 2));
         i   = * (cmd + 3);
         memcpy (rom, ram, i);
+        if (iap_program_log_count < IAP_PROGRAM_LOG_SIZE)
+        {
+            iap_program_log[iap_program_log_count++] = static_cast<unsigned int>(rom - FLASH);
+        }
         break;
     case IAP_COMPARE :
         iap_calls [I_COMPARE]++;
