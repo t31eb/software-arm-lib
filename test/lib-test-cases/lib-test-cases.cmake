@@ -38,4 +38,5 @@ set(SBLIB_LIB_TEST_CASES_SRC
         src/knx/test_mask0701_memory.cpp
         src/knx/test_mask0701_tables.cpp
         src/knx/test_mask0701_properties.cpp
+        src/knx/test_mask0701_persistence.cpp
 )
