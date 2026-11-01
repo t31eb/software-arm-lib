@@ -77,6 +77,18 @@ public:
     [[nodiscard]] uint8_t getUInt8(uint32_t address) const override;
     [[nodiscard]] uint16_t getUInt16(uint32_t address) const override;
 
+    /**
+     * @copydoc Memory::readBlock
+     * @note The status address outside of the user RAM range works as well, see @ref isStatusAddress.
+     */
+    [[nodiscard]] bool readBlock(uint32_t virtAddress, uint8_t* buffer, uint32_t length) const override;
+
+    /**
+     * @copydoc Memory::writeBlock
+     * @note The status address outside of the user RAM range works as well, see @ref isStatusAddress.
+     */
+    [[nodiscard]] bool writeBlock(uint32_t virtAddress, const uint8_t* buffer, uint32_t length) override;
+
     void cpyFromUserRam(uint32_t address, unsigned char* buffer, uint32_t count) const;
     void cpyToUserRam(uint32_t address, const unsigned char* buffer, uint32_t count);
 
@@ -85,6 +97,9 @@ public:
     uint8_t* userRamData = nullptr;
 
 protected:
+    /** @return True if a block is accessible, inside of the user RAM range or just the status address */
+    [[nodiscard]] bool blockAccessible(uint32_t virtAddress, uint32_t length) const;
+
     [[nodiscard]] virtual uint32_t statusOffset() const = 0;
     [[nodiscard]] virtual uint32_t runStateOffset() const = 0;
 

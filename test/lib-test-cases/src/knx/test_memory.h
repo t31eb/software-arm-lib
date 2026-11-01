@@ -32,6 +32,8 @@ public:
 
     [[nodiscard]] uint8_t getUInt8([[maybe_unused]] uint32_t address) const override { return 0;}
     [[nodiscard]] uint16_t getUInt16([[maybe_unused]] uint32_t address) const override { return 0;}
+    [[nodiscard]] bool readBlock([[maybe_unused]] uint32_t virtAddress, [[maybe_unused]] uint8_t* buffer, [[maybe_unused]] uint32_t length) const override { return false; }
+    [[nodiscard]] bool writeBlock([[maybe_unused]] uint32_t virtAddress, [[maybe_unused]] const uint8_t* buffer, [[maybe_unused]] uint32_t length) override { return false; }
 
 private:
     mutable uint8_t dummyByte = 0;

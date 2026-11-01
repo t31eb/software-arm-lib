@@ -168,6 +168,37 @@ uint16_t UserEeprom::getUInt16(uint32_t address) const
     return makeWord(userEepromData[address], userEepromData[address + 1]);
 }
 
+bool UserEeprom::readBlock(uint32_t virtAddress, uint8_t* buffer, const uint32_t length) const
+{
+    if (length == 0)
+    {
+        return true;
+    }
+    if (!inRange(virtAddress, virtAddress + length - 1))
+    {
+        return false;
+    }
+    normalizeAddress(&virtAddress);
+    memcpy(buffer, userEepromData + virtAddress, length);
+    return true;
+}
+
+bool UserEeprom::writeBlock(uint32_t virtAddress, const uint8_t* buffer, const uint32_t length)
+{
+    if (length == 0)
+    {
+        return true;
+    }
+    if (!inRange(virtAddress, virtAddress + length - 1))
+    {
+        return false;
+    }
+    normalizeAddress(&virtAddress);
+    memcpy(userEepromData + virtAddress, buffer, length);
+    modified(true);
+    return true;
+}
+
 void UserEeprom::modified(const bool newModified)
 {
     userEepromModified = newModified;

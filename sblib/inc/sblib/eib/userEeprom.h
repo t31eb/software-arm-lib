@@ -87,6 +87,14 @@ public:
     [[nodiscard]] uint8_t getUInt8(uint32_t address) const override;
     [[nodiscard]] uint16_t getUInt16(uint32_t address) const override;
 
+    [[nodiscard]] bool readBlock(uint32_t virtAddress, uint8_t* buffer, uint32_t length) const override;
+
+    /**
+     * @copydoc Memory::writeBlock
+     * @note Marks the user EEPROM as modified, like @ref modified(true).
+     */
+    [[nodiscard]] bool writeBlock(uint32_t virtAddress, const uint8_t* buffer, uint32_t length) override;
+
     /**
      * Mark/unmark the user EEPROM as modified. The EEPROM will be written to flash when the
      * bus is idle, all telegrams are processed, and no direct data connection is open.

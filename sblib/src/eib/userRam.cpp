@@ -106,6 +106,40 @@ void UserRam::cpyFromUserRam(uint32_t address, unsigned char* buffer, uint32_t c
     }
 }
 
+bool UserRam::blockAccessible(const uint32_t virtAddress, const uint32_t length) const
+{
+    const uint32_t lastAddress = virtAddress + length - 1;
+    return (inRange(virtAddress, lastAddress) || (isStatusAddress(virtAddress) && isStatusAddress(lastAddress)));
+}
+
+bool UserRam::readBlock(const uint32_t virtAddress, uint8_t* buffer, const uint32_t length) const
+{
+    if (length == 0)
+    {
+        return true;
+    }
+    if (!blockAccessible(virtAddress, length))
+    {
+        return false;
+    }
+    cpyFromUserRam(virtAddress, buffer, length);
+    return true;
+}
+
+bool UserRam::writeBlock(const uint32_t virtAddress, const uint8_t* buffer, const uint32_t length)
+{
+    if (length == 0)
+    {
+        return true;
+    }
+    if (!blockAccessible(virtAddress, length))
+    {
+        return false;
+    }
+    cpyToUserRam(virtAddress, buffer, length);
+    return true;
+}
+
 void UserRam::setUserRamStart(const uint32_t& newRamStart)
 {
     startAddress = newRamStart;
