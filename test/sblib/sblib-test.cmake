@@ -6,9 +6,11 @@ set(SBLIB_TEST_SRC
         cpu-emu/LPC11xx.h
         cpu-emu/system_LPC11xx.h
         inc/protocol.h
+        inc/spi_eeprom_emulator.h
         cpu-emu/system_lpc11xx.cpp
         cpu-emu/system_time_simulator.h
         cpu-emu/system_time_simulator.cpp
         src/protocol.cpp
+        src/spi_eeprom_emulator.cpp
 #        src/wrapper.cc
 )
