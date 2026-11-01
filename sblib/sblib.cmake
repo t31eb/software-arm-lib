@@ -30,6 +30,7 @@ set(SBLIB_CORE_SRC
         inc/sblib/serial.h
         inc/sblib/soft_uart.h
         inc/sblib/spi.h
+        inc/sblib/spi_eeprom.h
         inc/sblib/stream.h
         inc/sblib/timeout.h
         inc/sblib/timer.h
@@ -65,6 +66,7 @@ set(SBLIB_CORE_SRC
         src/serial0.cpp
         src/soft_uart.cpp
         src/spi.cpp
+        src/spi_eeprom.cpp
         src/stream.cpp
         src/timer.cpp
         src/utils.cpp
