@@ -527,6 +527,7 @@ bool PropertiesBCU2::propertyValueWriteTelegram(const int objectIdx, const Prope
         len = bcu->bus->telegramLen - 13;
         const int state = loadProperty(objectIdx, data, len);
         bcu->userEeprom->loadState()[objectIdx] = state;
+        bcu->userEeprom->modified(true);
         sendBuffer[12] = state;
         len = 1;
     }

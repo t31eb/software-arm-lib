@@ -86,7 +86,7 @@ TEST_CASE("MASK0701 load state machine", "[poc][loadstate]")
         REQUIRE(loadState[OT_ADDR_TABLE] == LS_ERROR);
     }
 
-    SECTION("memory write sets modified, property write of a load control does not")
+    SECTION("memory write and property write of a load control both set modified")
     {
         f.bcu->userEeprom->modified(false);
         f.loadControlMem(OT_ADDR_TABLE, LC_LOAD_COMPLETED);
@@ -95,7 +95,7 @@ TEST_CASE("MASK0701 load state machine", "[poc][loadstate]")
         f.bcu->userEeprom->modified(false);
         f.propertyWrite(OT_ASSOC_TABLE, PID_LOAD_STATE_CONTROL, loadControlIo(LC_LOAD_COMPLETED));
         REQUIRE(loadState[OT_ASSOC_TABLE] == LS_LOADED);
-        REQUIRE_FALSE(f.bcu->userEeprom->isModified());
+        REQUIRE(f.bcu->userEeprom->isModified());
     }
 }
 
@@ -136,13 +136,13 @@ TEST_CASE("MASK0701 persistence", "[poc][loadstate]")
         REQUIRE(f.memoryRead(F::ADDR_TABLE, 1).data == Data {0});
     }
 
-    SECTION("a load state written over a property is lost, unless something else marks the mirror as modified")
+    SECTION("a load state written over a property survives a restart")
     {
         flush(f);
         f.propertyWrite(OT_ADDR_TABLE, PID_LOAD_STATE_CONTROL, loadControlIo(LC_LOAD_COMPLETED));
         flush(f);
         f.restart();
-        REQUIRE(f.bcu->userEeprom->loadState()[OT_ADDR_TABLE] == LS_UNLOADED);
+        REQUIRE(f.bcu->userEeprom->loadState()[OT_ADDR_TABLE] == LS_LOADED);
     }
 
     SECTION("begin() changes the mirror without marking it as modified")
