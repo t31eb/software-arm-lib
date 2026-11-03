@@ -445,6 +445,18 @@ bool ComObjects::sendNextGroupTelegram()
                 Config Octet
                 Type Octet  // high mem
         */
+        // Check the ram-flags first: they are in RAM, while config and group address are in the
+        // non-volatile memory. Most objects have no request pending.
+        uint8_t flags = flagsTab[objno >> 1];
+        if (objno & 1)
+        {
+            flags >>= 4;
+        }
+        if ((flags & COMFLAG_TRANSREQ) != COMFLAG_TRANSREQ)
+        {
+            continue; // nothing to send for this object
+        }
+
         const ComConfig& configTab = objectConfig(objno);
         const uint16_t config = configTab.config;
         const uint16_t addr = firstObjectAddr(objno);
@@ -455,14 +467,6 @@ bool ComObjects::sendNextGroupTelegram()
             continue; // no communication allowed or no grp-adr associated, next obj.
         }
 
-        // check ram-flags for read or write request
-        uint8_t flags = flagsTab[objno >> 1];
-        if (objno & 1)
-        {
-            flags >>= 4;
-        }
-
-        if ((flags & COMFLAG_TRANSREQ) == COMFLAG_TRANSREQ)
         {
             //app is triggering a object read or write request on the bus
             if (flags & COMFLAG_DATAREQ)
