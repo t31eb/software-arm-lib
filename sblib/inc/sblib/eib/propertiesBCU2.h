@@ -30,6 +30,9 @@
  */
 constexpr uint8_t PID_LOAD_STATE_CONTROL_LENGTH = 10;
 
+/** Most bytes of a property value in one A_PropertyValue_Read/Write telegram (standard frame) */
+constexpr int PROPERTY_VALUE_MAX_LENGTH = 10;
+
 #define DMP_LOADSTATE_MACHINE_WRITE_RCO_IO_LENGTH  10           //!> Data length of a valid DMP_LoadStateMachineWrite_RCo_IO telegram
 #define DMP_LOADSTATE_MACHINE_WRITE_RCO_MEM_LENGTH  11          //!> Data length of a valid DMP_LoadStateMachineWrite_RCo_Mem telegram (deprecated)
 

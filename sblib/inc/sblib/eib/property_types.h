@@ -130,6 +130,25 @@ struct PropertyDef
     uint8_t* valuePointer(BcuBase* bcu) const;
 
     /**
+     * Read bytes of the property value without a pointer into the user EEPROM.
+     *
+     * @param bcu    The BCU the property belongs to.
+     * @param offset Offset of the first byte in the value.
+     * @param buffer Buffer of at least @p length bytes, provided by the caller.
+     * @param length Number of bytes to read.
+     * @return false if a value in the user EEPROM lies outside of it, true otherwise.
+     */
+    bool readValue(BcuBase* bcu, uint32_t offset, uint8_t* buffer, uint32_t length) const;
+
+    /**
+     * Write bytes of the property value without a pointer into the user EEPROM.
+     * A value in the user EEPROM is written with UserEeprom::writeBlock(), which marks it as modified.
+     *
+     * @return false if a value in the user EEPROM lies outside of it, true otherwise.
+     */
+    bool writeValue(BcuBase* bcu, uint32_t offset, const uint8_t* buffer, uint32_t length) const;
+
+    /**
      * Test if the valuePointer() points to the userEeprom.
      *
      * @return True if it is an EEPROM pointer, false if not.

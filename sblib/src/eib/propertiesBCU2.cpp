@@ -483,21 +483,24 @@ bool PropertiesBCU2::propertyValueReadTelegram(const int objectIdx, const Proper
         return false; // not found
 
     const auto type = (PropertyDataType)(def->control & PC_TYPE_MASK);
-    const uint8_t* valuePtr = def->valuePointer(bcu);
 
     --start;
     const int size = def->size();
     const int len = count * size;
-    if (len > 10)
+    if (len > PROPERTY_VALUE_MAX_LENGTH)
         return false; // length error
+
+    uint8_t value[PROPERTY_VALUE_MAX_LENGTH];
+    if (!def->readValue(bcu, start * size, value, len))
+        return false;
 
     if (type < PDT_CHAR_BLOCK)
     {
-        reverseCopy(sendBuffer + 12, valuePtr + start * size, len);
+        reverseCopy(sendBuffer + 12, value, len);
     }
     else
     {
-        memcpy(sendBuffer + 12, valuePtr + start * size, len);
+        memcpy(sendBuffer + 12, value, len);
     }
 
     sendBuffer[5] += len;
@@ -518,7 +521,6 @@ bool PropertiesBCU2::propertyValueWriteTelegram(const int objectIdx, const Prope
     }
 
     const PropertyDataType type = def->type();
-    uint8_t* valuePtr = def->valuePointer(bcu);
 
     const uint8_t* data = bcu->bus->telegram + 12;
     int len;
@@ -537,16 +539,22 @@ bool PropertiesBCU2::propertyValueWriteTelegram(const int objectIdx, const Prope
         const int size = def->size();
         len = count * size;
         DB_PROPERTIES(serial.print("propertyValueWriteTelegram: "); printObjectIdx(objectIdx); serial.print(" "); printPropertyID(propertyId);serial.println(););
+        if (len > PROPERTY_VALUE_MAX_LENGTH)
+            return false; // length error, before the bytes behind the telegram data were written
+
+        // write the value like it arrived (reversed for numbers), then answer with what is stored now
+        uint8_t value[PROPERTY_VALUE_MAX_LENGTH];
         if (type < PDT_CHAR_BLOCK)
-        {
-            reverseCopy(valuePtr + start * size, data, len);
-            reverseCopy(sendBuffer + 12, valuePtr + start * size, len);
-        }
+            reverseCopy(value, data, len);
         else
-        {
-            memcpy(valuePtr + start * size, data, len);
-            memcpy(sendBuffer + 12, valuePtr + start * size, len);
-        }
+            memcpy(value, data, len);
+        if (!def->writeValue(bcu, start * size, value, len) || !def->readValue(bcu, start * size, value, len))
+            return false;
+        if (type < PDT_CHAR_BLOCK)
+            reverseCopy(sendBuffer + 12, value, len);
+        else
+            memcpy(sendBuffer + 12, value, len);
+
         if (def->isEepromPointer())
             bcu->userEeprom->modified(true);
     }
@@ -578,7 +586,11 @@ bool PropertiesBCU2::propertyDescReadTelegram(const int objectIdx, const Propert
 
     int numElems;
     if ((def->control & PC_ARRAY_POINTER) == PC_ARRAY_POINTER)
-        numElems = *def->valuePointer(bcu);
+    {
+        uint8_t elements = 0;
+        (void) def->readValue(bcu, 0, &elements, 1);
+        numElems = elements;
+    }
     else
         numElems = 1;
 

@@ -12,6 +12,8 @@
 #include <sblib/eib/property_types.h>
 #include <sblib/eib/bcu_default.h>
 
+#include <cstring>
+
 #if defined(INCLUDE_SERIAL)
 #   include <sblib/serial.h>
 #endif
@@ -58,4 +60,27 @@ uint8_t* PropertyDef::valuePointer(BcuBase* bcu) const
     }
 
     return (uint8_t*) &valAddr;
+}
+
+bool PropertyDef::readValue(BcuBase* bcu, const uint32_t offset, uint8_t* buffer, const uint32_t length) const
+{
+    if (isEepromPointer())
+    {
+        UserEeprom* userEeprom = ((BcuDefault*)bcu)->userEeprom;
+        return userEeprom->readBlock(userEeprom->startAddr() + (valAddr & PPT_OFFSET_MASK) + offset, buffer, length);
+    }
+    // RAM and constant values stay where valuePointer() points to
+    memcpy(buffer, valuePointer(bcu) + offset, length);
+    return true;
+}
+
+bool PropertyDef::writeValue(BcuBase* bcu, const uint32_t offset, const uint8_t* buffer, const uint32_t length) const
+{
+    if (isEepromPointer())
+    {
+        UserEeprom* userEeprom = ((BcuDefault*)bcu)->userEeprom;
+        return userEeprom->writeBlock(userEeprom->startAddr() + (valAddr & PPT_OFFSET_MASK) + offset, buffer, length);
+    }
+    memcpy(valuePointer(bcu) + offset, buffer, length);
+    return true;
 }
