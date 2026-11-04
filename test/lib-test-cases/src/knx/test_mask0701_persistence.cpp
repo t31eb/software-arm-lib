@@ -38,13 +38,13 @@ void flush(const F& f)
 TEST_CASE("MASK0701 load state machine", "[poc][loadstate]")
 {
     F f;
-    uint8_t* loadState = f.bcu->userEeprom->loadState();
+    auto loadState = [&f](const uint8_t objectIdx) { return f.bcu->userEeprom->loadState(objectIdx); };
 
     SECTION("empty device is unloaded and the application doesn't run")
     {
         for (int i = 0; i < INTERFACE_OBJECT_COUNT; i++)
         {
-            REQUIRE(loadState[i] == LS_UNLOADED);
+            REQUIRE(loadState(i) == LS_UNLOADED);
         }
         REQUIRE_FALSE(f.bcu->applicationRunning());
     }
@@ -52,22 +52,22 @@ TEST_CASE("MASK0701 load state machine", "[poc][loadstate]")
     SECTION("download with memory writes")
     {
         f.loadControlMem(OT_ADDR_TABLE, LC_START_LOADING);
-        REQUIRE(loadState[OT_ADDR_TABLE] == LS_LOADING);
+        REQUIRE(loadState(OT_ADDR_TABLE) == LS_LOADING);
         f.allocTaskSegmentMem(OT_ADDR_TABLE, F::ADDR_TABLE);
-        REQUIRE(loadState[OT_ADDR_TABLE] == LS_LOADING);
+        REQUIRE(loadState(OT_ADDR_TABLE) == LS_LOADING);
         REQUIRE(f.bcu->userEeprom->addrTabAddr() == F::ADDR_TABLE);
         f.loadControlMem(OT_ADDR_TABLE, LC_LOAD_COMPLETED);
-        REQUIRE(loadState[OT_ADDR_TABLE] == LS_LOADED);
+        REQUIRE(loadState(OT_ADDR_TABLE) == LS_LOADED);
         f.loadControlMem(OT_ADDR_TABLE, LC_UNLOAD);
-        REQUIRE(loadState[OT_ADDR_TABLE] == LS_UNLOADED);
+        REQUIRE(loadState(OT_ADDR_TABLE) == LS_UNLOADED);
     }
 
     SECTION("after a complete download the application runs")
     {
         f.downloadTables();
-        REQUIRE(loadState[OT_ADDR_TABLE] == LS_LOADED);
-        REQUIRE(loadState[OT_ASSOC_TABLE] == LS_LOADED);
-        REQUIRE(loadState[OT_APPLICATION] == LS_LOADED);
+        REQUIRE(loadState(OT_ADDR_TABLE) == LS_LOADED);
+        REQUIRE(loadState(OT_ASSOC_TABLE) == LS_LOADED);
+        REQUIRE(loadState(OT_APPLICATION) == LS_LOADED);
         REQUIRE(f.bcu->applicationRunning());
     }
 
@@ -75,7 +75,7 @@ TEST_CASE("MASK0701 load state machine", "[poc][loadstate]")
     {
         const auto result = f.propertyWrite(OT_APPLICATION, PID_LOAD_STATE_CONTROL, loadControlIo(LC_START_LOADING));
         REQUIRE(result.data == Data {LS_LOADING});
-        REQUIRE(loadState[OT_APPLICATION] == LS_LOADING);
+        REQUIRE(loadState(OT_APPLICATION) == LS_LOADING);
         REQUIRE(f.memoryRead(F::LOAD_STATE + OT_APPLICATION, 1).data == Data {LS_LOADING});
         REQUIRE(f.propertyRead(OT_APPLICATION, PID_LOAD_STATE_CONTROL).data == Data {LS_LOADING});
     }
@@ -83,7 +83,7 @@ TEST_CASE("MASK0701 load state machine", "[poc][loadstate]")
     SECTION("load controls with a wrong length end in the error state")
     {
         f.memoryWrite(0x104, {static_cast<uint8_t>((OT_ADDR_TABLE << 4) | LC_START_LOADING)});
-        REQUIRE(loadState[OT_ADDR_TABLE] == LS_ERROR);
+        REQUIRE(loadState(OT_ADDR_TABLE) == LS_ERROR);
     }
 
     SECTION("memory write and property write of a load control both set modified")
@@ -94,7 +94,7 @@ TEST_CASE("MASK0701 load state machine", "[poc][loadstate]")
 
         f.bcu->userEeprom->modified(false);
         f.propertyWrite(OT_ASSOC_TABLE, PID_LOAD_STATE_CONTROL, loadControlIo(LC_LOAD_COMPLETED));
-        REQUIRE(loadState[OT_ASSOC_TABLE] == LS_LOADED);
+        REQUIRE(loadState(OT_ASSOC_TABLE) == LS_LOADED);
         REQUIRE(f.bcu->userEeprom->isModified());
     }
 }
@@ -142,7 +142,7 @@ TEST_CASE("MASK0701 persistence", "[poc][loadstate]")
         f.propertyWrite(OT_ADDR_TABLE, PID_LOAD_STATE_CONTROL, loadControlIo(LC_LOAD_COMPLETED));
         flush(f);
         f.restart();
-        REQUIRE(f.bcu->userEeprom->loadState()[OT_ADDR_TABLE] == LS_LOADED);
+        REQUIRE(f.bcu->userEeprom->loadState(OT_ADDR_TABLE) == LS_LOADED);
     }
 
     SECTION("begin() changes the mirror without marking it as modified")

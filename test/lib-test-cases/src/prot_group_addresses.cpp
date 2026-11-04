@@ -334,7 +334,7 @@ static void gatherProtocolState(ProtocolTestState * state, ProtocolTestState * r
 {
     state->state      = bcuUnderTest->userRam->status();
     state->connected  = bcuUnderTest->directConnection();
-    state->ownAddress = bcuUnderTest->userEeprom->addrTab()[0] << 8 | bcuUnderTest->userEeprom->addrTab()[1];
+    state->ownAddress = bcuUnderTest->userEeprom->physicalAddress();
 
     if(refState)
     {

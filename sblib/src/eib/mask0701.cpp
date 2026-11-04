@@ -27,8 +27,7 @@ bool MASK0701::processApciMemoryReadPDU(const int addressStart, uint8_t* payLoad
     if (addressStart >= LOAD_STATE_ADDR && addressStart < LOAD_STATE_ADDR + INTERFACE_OBJECT_COUNT)
     {
         const unsigned int objectIdx = addressStart - LOAD_STATE_ADDR;
-        //memcpy(payLoad, &userEeprom->loadState() + (addressStart - LOAD_STATE_ADDR), lengthPayLoad);
-        memcpy(payLoad, &userEeprom->loadState()[objectIdx], lengthPayLoad);
+        userEeprom->readLoadStates(objectIdx, payLoad, lengthPayLoad);
         DB_MEM_OPS(serial.print(" LOAD_STATE_ADDR: 0x", addressStart, HEX); serial.print(", objIdx: ", objectIdx, DEC); serial.println(" *payLoad=0x", *payLoad, HEX, 2));
         DB_PROPERTIES(serial.print(" LOAD_STATE_ADDR: 0x", addressStart, HEX); serial.print(", objIdx: ", objectIdx, DEC); serial.println(" *payLoad=0x", *payLoad, HEX, 2));
         return true;
@@ -47,7 +46,7 @@ bool MASK0701::processApciMemoryWritePDU(const int addressStart, uint8_t* payLoa
         DB_PROPERTIES(serial.println(" LOAD_CONTROL_ADDR: objectIdx:", objectIdx, HEX));
         if (objectIdx < INTERFACE_OBJECT_COUNT)
         {
-            userEeprom->loadState()[objectIdx] = properties->loadProperty(objectIdx, &payLoad[0], lengthPayLoad);
+            userEeprom->setLoadState(objectIdx, properties->loadProperty(objectIdx, &payLoad[0], lengthPayLoad));
             userEeprom->modified(true);
             DB_PROPERTIES(serial.println());
             return true;

@@ -130,11 +130,6 @@ uint8_t& UserEeprom::directAccess_8(const uint32_t index) const
     return this->userEepromData[index];
 }
 
-uint16_t& UserEeprom::directAccess_16(const uint32_t index) const
-{
-    return reinterpret_cast<uint16_t&>(directAccess_8(index));
-}
-
 uint16_t UserEeprom::field16(const uint32_t offset) const
 {
     return makeWord(field8(offset + 1), field8(offset));
@@ -144,6 +139,16 @@ void UserEeprom::setField16(const uint32_t offset, const uint16_t value)
 {
     setField8(offset, lowByte(value));
     setField8(offset + 1, HIGH_BYTE(value));
+}
+
+void UserEeprom::readField(const uint32_t offset, uint8_t* buffer, const uint32_t length) const
+{
+    memcpy(buffer, userEepromData + offset, length);
+}
+
+void UserEeprom::writeField(const uint32_t offset, const uint8_t* buffer, const uint32_t length)
+{
+    memcpy(userEepromData + offset, buffer, length);
 }
 
 uint8_t& UserEeprom::operator[](uint32_t address) const

@@ -39,12 +39,8 @@ static void tc_setupWithSerialNumber(Telegram* tel, uint16_t telCount)
 {
    tc_setup(tel, telCount);
    UserEepromBCU2* eeprom = (UserEepromBCU2*)(bcuUnderTest->userEeprom);
-   eeprom->serial()[0] = 0xC8;
-   eeprom->serial()[1] = 0xAC;
-   eeprom->serial()[2] = 0x02;
-   eeprom->serial()[3] = 0x4C;
-   eeprom->serial()[4] = 0x4F;
-   eeprom->serial()[5] = 0x98;
+   const uint8_t serialNumber[] = {0xC8, 0xAC, 0x02, 0x4C, 0x4F, 0x98};
+   eeprom->writeSerial(serialNumber);
 }
 
 static void connect(void * state, [[maybe_unused]] unsigned int param)
@@ -59,7 +55,7 @@ static void disconnect(void * state, [[maybe_unused]] unsigned int param)
 
 static void phy_addr_changed(void * state, [[maybe_unused]] unsigned int param)
 {
-    VaS(state)->ownAddress = bcuUnderTest->userEeprom->addrTab()[0] << 8 | bcuUnderTest->userEeprom->addrTab()[1];
+    VaS(state)->ownAddress = bcuUnderTest->userEeprom->physicalAddress();
 }
 
 static void clearProgMode(void * state, [[maybe_unused]] unsigned int param)
@@ -143,7 +139,7 @@ static void gatherProtocolState(ProtocolTestState * state, ProtocolTestState * r
 {
     state->state      = bcuUnderTest->userRam->status();
     state->connected  = bcuUnderTest->directConnection();
-    state->ownAddress = bcuUnderTest->userEeprom->addrTab()[0] << 8 | bcuUnderTest->userEeprom->addrTab()[1];
+    state->ownAddress = bcuUnderTest->userEeprom->physicalAddress();
 
     if(refState)
     {

@@ -2,6 +2,7 @@
 #define SBLIB_KNX_USEREEPROM_BCU1_H_
 
 #include <sblib/eib/userEeprom.h>
+#include <sblib/bits.h>
 
 
 /**
@@ -70,7 +71,12 @@ public:
     [[nodiscard]] uint8_t addrTabSize() const override { return field8(addrTabSizeOffset); }
     void setAddrTabSize(const uint8_t value) override { setField8(addrTabSizeOffset, value); }
     [[nodiscard]] uint8_t* addrTab() const override { return &directAccess_8(addrTabOffset); }
-    [[nodiscard]] virtual uint8_t* user230bytesStart() const { return &directAccess_8(user230bytesStartOffset); }
+    [[nodiscard]] uint16_t physicalAddress() const override { return makeWord(field8(addrTabOffset), field8(addrTabOffset + 1)); }
+    void setPhysicalAddress(const uint16_t address) override
+    {
+        setField8(addrTabOffset, HIGH_BYTE(address));
+        setField8(addrTabOffset + 1, lowByte(address));
+    }
     [[nodiscard]] virtual uint8_t checksum() const { return field8(checksumOffset); }
     virtual void setChecksum(const uint8_t value) { setField8(checksumOffset, value); }
 

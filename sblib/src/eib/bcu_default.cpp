@@ -78,7 +78,7 @@ void BcuDefault::_begin()
 
 void BcuDefault::begin(const int manufacturer, const int deviceType, const int version)
 {
-    setOwnAddress(makeWord(userEeprom->addrTab()[0], userEeprom->addrTab()[1]));
+    setOwnAddress(userEeprom->physicalAddress());
     userRam->status() = BCU_STATUS_LINK_LAYER | BCU_STATUS_TRANSPORT_LAYER | BCU_STATUS_APPLICATION_LAYER | BCU_STATUS_USER_MODE;
     userRam->deviceControl() = 0;
     userRam->runState() = 1;
@@ -100,10 +100,9 @@ void BcuDefault::begin(const int manufacturer, const int deviceType, const int v
 
 void BcuDefault::setOwnAddress(const uint16_t addr)
 {
-    if (addr != makeWord(userEeprom->addrTab()[0], userEeprom->addrTab()[1]))
+    if (addr != userEeprom->physicalAddress())
     {
-        userEeprom->addrTab()[0] = HIGH_BYTE(addr);
-        userEeprom->addrTab()[1] = lowByte(addr);
+        userEeprom->setPhysicalAddress(addr);
         userEeprom->modified(true);
     }
     BcuBase::setOwnAddress(addr);

@@ -208,7 +208,7 @@ TEST_CASE("MASK0701 load control and load state addresses", "[poc][memory]")
         constexpr uint32_t LOAD_STATE_ADDRESS = 0xB6E9;
         for (uint8_t i = 0; i < INTERFACE_OBJECT_COUNT; i++)
         {
-            f.bcu->userEeprom->loadState()[i] = static_cast<uint8_t>(0x10 + i);
+            f.bcu->userEeprom->setLoadState(i, static_cast<uint8_t>(0x10 + i));
         }
         for (uint8_t i = 0; i < INTERFACE_OBJECT_COUNT; i++)
         {
@@ -226,7 +226,7 @@ TEST_CASE("MASK0701 load control and load state addresses", "[poc][memory]")
     SECTION("load state address can't be written")
     {
         f.memoryWrite(0xB6E9, {LS_LOADED});
-        REQUIRE(f.bcu->userEeprom->loadState()[0] == LS_UNLOADED);
+        REQUIRE(f.bcu->userEeprom->loadState(0) == LS_UNLOADED);
     }
 
     SECTION("load control of an unknown object is refused")

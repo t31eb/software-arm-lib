@@ -79,8 +79,7 @@ static Telegram testCaseTelegrams[] =
 
 static void tc_eepromSetup(void)
 {
-    bcuUnderTest->userEeprom->addrTab()[0] = 0x11;  // sets own address to 1.1.126
-    bcuUnderTest->userEeprom->addrTab()[1] = 0x7E;  // sets own address to 1.1.126
+    bcuUnderTest->userEeprom->setPhysicalAddress(0x117E); // sets own address to 1.1.126
     bcuUnderTest->userEeprom->setAppPeiType(0x00);
 }
 
@@ -93,7 +92,7 @@ static void gatherProtocolState(ProtocolTestState * state, ProtocolTestState * r
 {
     state->state      = bcuUnderTest->userRam->status();
     state->connected  = bcuUnderTest->directConnection();
-    state->ownAddress = bcuUnderTest->userEeprom->addrTab()[0] << 8 | bcuUnderTest->userEeprom->addrTab()[1];
+    state->ownAddress = bcuUnderTest->userEeprom->physicalAddress();
 
     if(refState)
     {

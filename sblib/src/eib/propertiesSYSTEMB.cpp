@@ -159,13 +159,6 @@ LoadState PropertiesSYSTEMB::handleDataRelativeAllocation(const int objectIdx, c
         bcu->userEeprom->eibObjAddr(), bcu->userEeprom->commsSeg0Addr()
     };
 
-    const UserEepromSYSTEMB* userEeprom = (UserEepromSYSTEMB*)bcu->userEeprom;
-
-    uint8_t* tableSize[] = {
-        &userEeprom->addrTabMcb()[0], &userEeprom->assocTabMcb()[0], &userEeprom->commsTabMcb()[0],
-        &userEeprom->eibObjMcb()[0], &userEeprom->commsSeg0Mcb()[0]
-    };
-
     uint16_t virtMemAddr = 0x3A9E; ///\todo get rid of magic number USER_EEPROM_START + USER_EEPROM_SIZE
     for (int i = 0; i < 5; i++)
     {
@@ -182,11 +175,8 @@ LoadState PropertiesSYSTEMB::handleDataRelativeAllocation(const int objectIdx, c
         case 5: bcu->userEeprom->setCommsSeg0Addr(newTableAddress); break;
         default: break; // before, an index outside 1..5 wrote behind the array
     }
-    uint8_t* tabSiz = tableSize[objectIdx - 1];
-    tabSiz[0] = payLoad[0];
-    tabSiz[1] = payLoad[1];
-    tabSiz[2] = payLoad[2];
-    tabSiz[3] = payLoad[3];
+    // the requested size is the start of the memory control block
+    ((UserEepromSYSTEMB*)bcu->userEeprom)->writeTableMcb(objectIdx - 1, payLoad, 4);
 
     // Mode = 0x01 => fill allocated memory
     if (payLoad[4] > 0)
@@ -376,7 +366,7 @@ bool PropertiesSYSTEMB::propertyValueWriteTelegram(const int objectIdx, const Pr
     {
         len = bcu->bus->telegramLen - 13;
         const int state = loadProperty(objectIdx, data, len);
-        bcu->userEeprom->loadState()[objectIdx] = state;
+        bcu->userEeprom->setLoadState(objectIdx, state);
         sendBuffer[12] = state;
         len = 1;
     }

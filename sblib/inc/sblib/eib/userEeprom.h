@@ -89,6 +89,10 @@ public:
     [[nodiscard]] virtual uint8_t addrTabSize() const = 0;
     virtual void setAddrTabSize(uint8_t value) = 0;
     [[nodiscard]] virtual uint8_t* addrTab() const = 0;
+    /** @return Own physical address, the first entry of the address table (high byte first). */
+    [[nodiscard]] virtual uint16_t physicalAddress() const = 0;
+    /** Set the own physical address in the first entry of the address table. Does not mark the memory as modified. */
+    virtual void setPhysicalAddress(uint16_t address) = 0;
 
     /**
      * Access the user EEPROM like an ordinary array.
@@ -169,37 +173,8 @@ protected:
     [[nodiscard]] uint8_t& directAccess_8(uint32_t index) const;
 
     /**
-     * @brief Access the internal @ref userEepromData array directly by raw index, without
-     *        any @ref startAddress offset subtraction.
-     *
-     * @note  Internally delegates to @ref directAccess_8() and reinterprets the result
-     *        as a 16-bit reference via @c reinterpret_cast (little-endian).
-     *
-     * @warning **Alignment is mandatory.**
-     *          The target platform (ARM Cortex-M0 / LPC11xx) does **not** support
-     *          unaligned multibyte memory accesses. Passing an odd @p index will
-     *          cause a **HardFault** at runtime, and is also Undefined Behavior
-     *          in C++ (strict aliasing / alignment rules).\n
-     *          Always verify the offset with a compile-time check before use, e.g.:
-     *          @code
-     *          static_assert(myOffset % 2 == 0, "myOffset must be 2-byte aligned");
-     *          @endcode
-     *          The base pointer @ref userEepromData is guaranteed to be aligned to
-     *          @ref FLASH_RAM_BUFFER_ALIGNMENT, so only @p index itself needs to be even.
-     *
-     * @param index  Zero-based, **even** index into @ref userEepromData pointing to the
-     *               low byte of the 16-bit value. Must satisfy
-     *               <tt>startAddress + index</tt> within the valid address range,
-     *               otherwise @ref fatalError() is called.
-     * @return       Reference to the two bytes at @ref userEepromData[index] interpreted
-     *               as @c uint16_t.
-     * @warning This method is intended for internal use only.
-     */
-    [[nodiscard]] uint16_t& directAccess_16(uint32_t index) const;
-
-    /**
      * @brief Value of a byte of the user EEPROM, by offset from its start (no @ref startAddress involved).
-     * @details Used by the named getters of the system fields. Pointer free replacement of @ref directAccess_8.
+     * @details Used by the named getters of the system fields. Replaces the former references of directAccess_8/_16.
      *          Without a range check: @p offset is a constant of the derived class and always inside.
      */
     [[nodiscard]] uint8_t field8(const uint32_t offset) const { return userEepromData[offset]; }
@@ -222,6 +197,15 @@ protected:
      * @details Written byte by byte, so @p offset may be odd. Does not mark the memory as modified.
      */
     void setField16(uint32_t offset, uint16_t value);
+
+    /** @brief Copy @p length bytes of the user EEPROM, by offset from its start, into @p buffer. */
+    void readField(uint32_t offset, uint8_t* buffer, uint32_t length) const;
+
+    /**
+     * @brief Copy @p length bytes from @p buffer into the user EEPROM, by offset from its start.
+     * @details Does not mark the memory as modified.
+     */
+    void writeField(uint32_t offset, const uint8_t* buffer, uint32_t length);
 
     bool userEepromModified = false;
     uint32_t writeUserEepromTime = 0;

@@ -19,7 +19,7 @@
 void BCU2::setOwnAddress(const uint16_t addr)
 {
     BcuDefault::setOwnAddress(addr);
-    if (userEeprom->loadState()[OT_ADDR_TABLE] == LS_LOADING)
+    if (userEeprom->loadState(OT_ADDR_TABLE) == LS_LOADING)
     {
         uint8_t* addrTab = addrTables->addrTable() + 1;
         *(addrTab + 0) = HIGH_BYTE(ownAddress());
@@ -35,7 +35,7 @@ inline void BCU2::begin(const int manufacturer, const int deviceType, const int 
     userRam->peiType() = 0;    // PEI type: 0=no adapter connected to PEI.
     userEeprom->setAppType(0); // Set to BCU2 application. ETS reads this when programming.
 
-    if (userEeprom->loadState()[OT_ADDR_TABLE] == LS_LOADING)
+    if (userEeprom->loadState(OT_ADDR_TABLE) == LS_LOADING)
     {
         const uint8_t* addrTab = addrTables->addrTable() + 1;
         setOwnAddress(makeWord(*(addrTab), *(addrTab + 1)));
@@ -52,6 +52,9 @@ inline void BCU2::begin(const int manufacturer, const int deviceType, const int 
     uint8_t uniqueID[IAP_UID_LENGTH];
 
     bool useOldSerialStyle = true;
+    // filled from the user EEPROM, so bytes a failing createKNXSerial() doesn't write stay as they were
+    uint8_t serialNumber[KNX_SERIAL_NUMBER_LENGTH];
+    userEeprom->readSerial(serialNumber);
     if (iapReadUID(&uniqueID[0]) == IAP_SUCCESS)
     {
         /// https://community.nxp.com/t5/LPC-Microcontrollers/IAP-C-code-example-query/m-p/596139/highlight/true#M22963
@@ -68,19 +71,23 @@ inline void BCU2::begin(const int manufacturer, const int deviceType, const int 
 
         // create a 48bit serial/hash from the 128bit Guid
         //useOldSerialStyle = !hashUID(&uniqueID[0], sizeof(uniqueID), &userEeprom->serial()[0], userEeprom->serialSize()); ///\todo delete on release
-        useOldSerialStyle = !createKNXSerial(&uniqueID[0], sizeof(uniqueID), &userEeprom->serial()[0], userEeprom->serialSize());
+        useOldSerialStyle = !createKNXSerial(&uniqueID[0], sizeof(uniqueID), &serialNumber[0], sizeof(serialNumber));
     }
 
     if (useOldSerialStyle)
     {
         iapReadPartID(&partID);
-        memcpy(userEeprom->serial(), &partID, 4);
-        userEeprom->serial()[4] = HIGH_BYTE(SBLIB_VERSION);
-        userEeprom->serial()[5] = lowByte(SBLIB_VERSION);
+        memcpy(serialNumber, &partID, 4);
+        serialNumber[4] = HIGH_BYTE(SBLIB_VERSION);
+        serialNumber[5] = lowByte(SBLIB_VERSION);
     }
+    userEeprom->writeSerial(serialNumber);
 
-    userEeprom->orderInfo()[userEeprom->orderInfoSize() - 2] = HIGH_BYTE(SBLIB_VERSION);
-    userEeprom->orderInfo()[userEeprom->orderInfoSize() - 1] = lowByte(SBLIB_VERSION);
+    uint8_t orderInfo[UserEepromBCU2::ORDER_INFO_SIZE];
+    userEeprom->readOrderInfo(orderInfo);
+    orderInfo[sizeof(orderInfo) - 2] = HIGH_BYTE(SBLIB_VERSION);
+    orderInfo[sizeof(orderInfo) - 1] = lowByte(SBLIB_VERSION);
+    userEeprom->writeOrderInfo(orderInfo);
 
     BcuDefault::_begin();
     static_cast<ComObjectsBCU2*>(this->comObjects)->printObjectConfigTable();
@@ -97,9 +104,9 @@ bool BCU2::applicationRunning() const
         return false;
 
     return ((userRam->runState() == 1) &&
-            (userEeprom->loadState()[OT_ADDR_TABLE] == LS_LOADED) &&  // address table object
-            (userEeprom->loadState()[OT_ASSOC_TABLE] == LS_LOADED) && // association table object
-            (userEeprom->loadState()[OT_APPLICATION] == LS_LOADED));  // application object. All three in state "Loaded"
+            (userEeprom->loadState(OT_ADDR_TABLE) == LS_LOADED) &&  // address table object
+            (userEeprom->loadState(OT_ASSOC_TABLE) == LS_LOADED) && // association table object
+            (userEeprom->loadState(OT_APPLICATION) == LS_LOADED));  // application object. All three in state "Loaded"
 }
 
 BCU2::BCU2() : BCU2(new UserRamBCU2(), new UserEepromBCU2(), new ComObjectsBCU2(this), new AddrTablesBCU2(this), new PropertiesBCU2(this))
@@ -173,7 +180,14 @@ void BCU2::setHardwareType(const uint8_t* hardwareType, uint8_t size)
     {
         size = userEeprom->orderSize();
     }
-    memcpy(userEeprom->order(), hardwareType, size);
+    userEeprom->writeOrder(hardwareType, size);
+}
+
+bool BCU2::serialNumberMatches(const uint8_t* serialNumber) const
+{
+    uint8_t own[KNX_SERIAL_NUMBER_LENGTH];
+    userEeprom->readSerial(own);
+    return memcmp(serialNumber, own, sizeof(own)) == 0;
 }
 
 bool BCU2::processBroadCastTelegram(const ApciCommand apciCmd, unsigned char* telegram, const uint8_t telLength)
@@ -182,7 +196,7 @@ bool BCU2::processBroadCastTelegram(const ApciCommand apciCmd, unsigned char* te
     {
         case APCI_INDIVIDUALADDRESS_SERIALNUMBER_WRITE_PDU:
             // telegram[8-13] contains serial number to check, telegram[14-15] = new physical address
-            if (memcmp(&telegram[8], &userEeprom->serial()[0], userEeprom->serialSize()) != 0)
+            if (!serialNumberMatches(&telegram[8]))
             {
                 return (false);
             }
@@ -198,7 +212,7 @@ bool BCU2::processBroadCastTelegram(const ApciCommand apciCmd, unsigned char* te
 
         case APCI_INDIVIDUALADDRESS_SERIALNUMBER_READ_PDU:
             // telegram[8-13] contains serial number to check
-            if (memcmp(&telegram[8], &userEeprom->serial()[0], userEeprom->serialSize()) != 0)
+            if (!serialNumberMatches(&telegram[8]))
             {
                 return (false);
             }
@@ -221,10 +235,7 @@ void BCU2::sendApciIndividualAddressSerialNumberReadResponse()
     sendBuffer[5] = 0xe0 + 11;                 // address type & routing count in high nibble + response length (11) in low nibble
     setApciCommand(sendBuffer, APCI_INDIVIDUALADDRESS_SERIALNUMBER_RESPONSE_PDU, 0);
     // sendBuffer[8-13] contains serial number
-    for (uint8_t i = 0; i < userEeprom->serialSize(); i++)
-    {
-        sendBuffer[8 + i] = userEeprom->serial()[i];
-    }
+    userEeprom->readSerial(&sendBuffer[8]);
 
     // sendBuffer[14-15] contains domain address
     sendBuffer[14] = 0x00;

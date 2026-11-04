@@ -105,8 +105,8 @@ TEST_CASE("MASK0701 load states inside the table area (issue #112)", "[poc][tabl
     {
         REQUIRE(F::LOAD_STATE == 0x4270);
         REQUIRE(F::COMMS_TAB_ADDR == 0x427C);
-        REQUIRE(reinterpret_cast<uint8_t*>(f.bcu->userEeprom->loadState()) ==
-                &f.bcu->userEeprom->userEepromData[0x370]);
+        f.bcu->userEeprom->setLoadState(OT_ADDR_TABLE, 0x5A);
+        REQUIRE(f.mirrorByte(F::LOAD_STATE + OT_ADDR_TABLE) == 0x5A);
     }
 
     SECTION("a table with 240 group addresses and its association table overwrite load states and pointers")
@@ -117,7 +117,7 @@ TEST_CASE("MASK0701 load states inside the table area (issue #112)", "[poc][tabl
         const Data table(1 + 2 * 240, 0xA5);
         f.memoryWriteChunked(0x41E3, table);
 
-        REQUIRE(f.bcu->userEeprom->loadState()[OT_ADDR_TABLE] == 0xA5);
+        REQUIRE(f.bcu->userEeprom->loadState(OT_ADDR_TABLE) == 0xA5);
         REQUIRE(f.bcu->userEeprom->addrTabAddr() == 0xA5A5);
         REQUIRE(f.bcu->addrTables->addrTable() == nullptr);
         REQUIRE_FALSE(f.bcu->applicationRunning());

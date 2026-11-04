@@ -137,6 +137,9 @@ protected:
 
     void sendApciIndividualAddressSerialNumberReadResponse();
 
+    /** @return true if @p serialNumber (KNX_SERIAL_NUMBER_LENGTH bytes) is the own serial number. */
+    [[nodiscard]] bool serialNumberMatches(const uint8_t* serialNumber) const;
+
     uint16_t commObjectTableAddressStatic = 0; //!> The read-only CommObjectTable address which can't be changed by KNX telegrams
 };
 

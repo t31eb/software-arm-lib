@@ -28,11 +28,25 @@ public:
 
     [[nodiscard]] virtual uint32_t serialSize() const { return KNX_SERIAL_NUMBER_LENGTH; };
     [[nodiscard]] virtual uint32_t orderSize() const { return 10; };
-    [[nodiscard]] virtual uint32_t orderInfoSize() const { return 10; };
+    [[nodiscard]] virtual uint32_t orderInfoSize() const { return ORDER_INFO_SIZE; };
+
+    static constexpr uint32_t ORDER_INFO_SIZE = 10; //!< Length of the ordering information in bytes
 
     [[nodiscard]] virtual uint8_t appType() const { return field8(appTypeOffset); }
     virtual void setAppType(const uint8_t value) { setField8(appTypeOffset, value); }
-    [[nodiscard]] virtual uint8_t* loadState() const { return &directAccess_8(loadStateOffset); }
+    /** @return Load state of interface object @p objectIdx. */
+    [[nodiscard]] virtual uint8_t loadState(const uint8_t objectIdx) const { return field8(loadStateOffset + objectIdx); }
+    /** Set the load state of interface object @p objectIdx. Does not mark the memory as modified. */
+    virtual void setLoadState(const uint8_t objectIdx, const uint8_t state) { setField8(loadStateOffset + objectIdx, state); }
+    /**
+     * Read @p length bytes from the load state of interface object @p objectIdx on.
+     * More bytes than there are load states read on into the table pointers behind them,
+     * which DMP_LoadStateMachineRead_RCo_Mem does today.
+     */
+    virtual void readLoadStates(const uint8_t objectIdx, uint8_t* buffer, const uint32_t length) const
+    {
+        readField(loadStateOffset + objectIdx, buffer, length);
+    }
     [[nodiscard]] virtual uint16_t commsTabAddr() const { return field16(commsTabAddrOffset); }
     virtual void setCommsTabAddr(const uint16_t value) { setField16(commsTabAddrOffset, value); }
     [[nodiscard]] virtual uint16_t commsSeg0Addr() const { return field16(commsSeg0AddrOffset); }
@@ -47,8 +61,12 @@ public:
     virtual void setAddrTabAddr(const uint16_t value) { setField16(addrTabAddrOffset, value); }
     [[nodiscard]] virtual uint16_t assocTabAddr() const { return field16(assocTabAddrOffset); }
     virtual void setAssocTabAddr(const uint16_t value) { setField16(assocTabAddrOffset, value); }
-    [[nodiscard]] virtual uint8_t* serial() const { return &directAccess_8(serialOffset); }
-    [[nodiscard]] virtual uint8_t* order() const { return &directAccess_8(orderOffset); }
+    /** Copy the serial (serialSize() bytes) into @p buffer. */
+    virtual void readSerial(uint8_t* buffer) const { readField(serialOffset, buffer, serialSize()); }
+    /** Set the serial (serialSize() bytes) from @p buffer. Does not mark the memory as modified. */
+    virtual void writeSerial(const uint8_t* buffer) { writeField(serialOffset, buffer, serialSize()); }
+    /** Set the first @p length bytes (at most @ref orderSize()) of the hardware type. Does not mark the memory as modified. */
+    virtual void writeOrder(const uint8_t* buffer, const uint32_t length) { writeField(orderOffset, buffer, length); }
 
     [[nodiscard]] virtual uint8_t padding1() const { return field8(padding1Offset); }
     virtual void setPadding1(const uint8_t value) { setField8(padding1Offset, value); }
@@ -56,7 +74,10 @@ public:
     virtual void setServiceControl(const uint8_t value) { setField8(serviceControlOffset, value); }
     [[nodiscard]] virtual uint8_t padding2() const { return field8(padding2Offset); }
     virtual void setPadding2(const uint8_t value) { setField8(padding2Offset, value); }
-    [[nodiscard]] virtual uint8_t* orderInfo() const { return &directAccess_8(orderInfoOffset); }
+    /** Copy the orderInfo (orderInfoSize() bytes) into @p buffer. */
+    virtual void readOrderInfo(uint8_t* buffer) const { readField(orderInfoOffset, buffer, orderInfoSize()); }
+    /** Set the orderInfo (orderInfoSize() bytes) from @p buffer. Does not mark the memory as modified. */
+    virtual void writeOrderInfo(const uint8_t* buffer) { writeField(orderInfoOffset, buffer, orderInfoSize()); }
 
 protected:
     // BCU2 has no variable EEPROM start or size, so make this constructor protected
@@ -99,16 +120,6 @@ private:
     static constexpr uint32_t eibObjVerOffset = 0x3CC;    //!< 0x04CC-0x04D0: Application program 1 version
     static constexpr uint32_t commsSeg0VerOffset = 0x3D1; //!< 0x04D1-0x04D5: Application program 2 version
     // end todo
-
-    // Ensure all uint16_t fields are 2-byte aligned within the EEPROM array.
-    // The array index is (offset - startAddress); since startAddress=0x100 (even),
-    // it is sufficient to check that each offset itself is 2-byte aligned.
-    static_assert(addrTabAddrOffset   % 2 == 0, "addrTabAddrOffset must be 2-byte aligned");
-    static_assert(assocTabAddrOffset  % 2 == 0, "assocTabAddrOffset must be 2-byte aligned");
-    static_assert(commsTabAddrOffset  % 2 == 0, "commsTabAddrOffset must be 2-byte aligned");
-    static_assert(commsSeg0AddrOffset % 2 == 0, "commsSeg0AddrOffset must be 2-byte aligned");
-    static_assert(commsSeg1AddrOffset % 2 == 0, "commsSeg1AddrOffset must be 2-byte aligned");
-    static_assert(eibObjAddrOffset    % 2 == 0, "eibObjAddrOffset must be 2-byte aligned");
 };
 
 #endif /* SBLIB_KNX_USEREEPROM_BCU2_H_ */

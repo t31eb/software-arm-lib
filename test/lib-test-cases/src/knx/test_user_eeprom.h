@@ -66,6 +66,12 @@ public:
     [[nodiscard]] uint8_t addrTabSize() const override { return field8(21); }
     void setAddrTabSize(const uint8_t value) override { setField8(21, value); }
     [[nodiscard]] uint8_t* addrTab() const override { return &userEepromData[22]; }
+    [[nodiscard]] uint16_t physicalAddress() const override { return (field8(22) << 8) | field8(23); }
+    void setPhysicalAddress(const uint16_t address) override
+    {
+        setField8(22, static_cast<uint8_t>(address >> 8));
+        setField8(23, static_cast<uint8_t>(address & 0xFF));
+    }
 };
 
 

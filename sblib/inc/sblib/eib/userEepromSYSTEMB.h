@@ -16,11 +16,20 @@ public:
     void setAddrTabAddr(const uint16_t value) override { setField16(addrTabAddrOffset, value); }
     [[nodiscard]] uint16_t assocTabAddr() const override { return field16(assocTabAddrOffset); }
     void setAssocTabAddr(const uint16_t value) override { setField16(assocTabAddrOffset, value); }
-    [[nodiscard]] virtual uint8_t* addrTabMcb() const { return &directAccess_8(addrTabMcbOffset); }
-    [[nodiscard]] virtual uint8_t* assocTabMcb() const { return &directAccess_8(assocTabMcbOffset); }
-    [[nodiscard]] virtual uint8_t* commsTabMcb() const { return &directAccess_8(commsTabMcbOffset); }
-    [[nodiscard]] virtual uint8_t* commsSeg0Mcb() const { return &directAccess_8(commsSeg0McbOffset); }
-    [[nodiscard]] virtual uint8_t* eibObjMcb() const { return &directAccess_8(eibObjMcbOffset); }
+    /**
+     * Write the first @p length bytes of the memory control block of a table.
+     * @param tableIdx 0 address table, 1 association table, 2 com object table, 3 EIB objects, 4 segment 0;
+     *                 other values write nothing.
+     */
+    virtual void writeTableMcb(const uint8_t tableIdx, const uint8_t* buffer, const uint32_t length)
+    {
+        constexpr uint32_t offsets[] = {addrTabMcbOffset, assocTabMcbOffset, commsTabMcbOffset, eibObjMcbOffset,
+                                        commsSeg0McbOffset};
+        if (tableIdx < sizeof(offsets) / sizeof(offsets[0]))
+        {
+            writeField(offsets[tableIdx], buffer, length);
+        }
+    }
 
 protected:
     UserEepromSYSTEMB(const uint32_t start, const uint32_t size, const uint32_t flashSize)
@@ -38,11 +47,6 @@ private:
     static constexpr uint32_t commsSeg0McbOffset = 0x6D; //!< 0x336D-0x3374
     static constexpr uint32_t eibObjVerOffset = 0x75;    //!< 0x3375-0x3379 Application program 1 version
     static constexpr uint32_t commsSeg0VerOffset = 0x7A; //!< 0x337A-0x337E Application program 2 version
-
-    ///\todo These two asserts fail, see UserEeprom::directAccess_16 for details.
-    ///      The offset must be 2-byte aligned to avoid unaligned memory access.
-    //static_assert(addrTabAddrOffset   % 2 == 0, "addrTabAddrOffset must be 2-byte aligned");
-    //static_assert(assocTabAddrOffset   % 2 == 0, "assocTabAddrOffset must be 2-byte aligned");
 };
 
 #endif /* SBLIB_KNX_USEREEPROM_SYSTEMB_H_ */
