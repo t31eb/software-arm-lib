@@ -61,6 +61,15 @@ TEST_CASE("MASK0701 tables after a download", "[poc][tables]")
         REQUIRE(com->firstObjectAddr(0) == 0); // no association
     }
 
+    SECTION("firstObjectAddr() skips associations behind the address table and scans on")
+    {
+        // object 1: first with index 3 (behind the table: 3 entries including the own address), then with index 2
+        f.memoryWrite(F::ASSOC_TABLE + 1, {3, 1, 2, 2, 2, 1});
+        REQUIRE(com->firstObjectAddr(1) == F::GROUP_ADDRESS_2);
+        f.memoryWrite(F::ASSOC_TABLE + 5, {1, 3});
+        REQUIRE(com->firstObjectAddr(1) == 0); // the phantom address behind the table is not returned
+    }
+
     SECTION("com object configuration")
     {
         REQUIRE(com->objectCount() == 4);
