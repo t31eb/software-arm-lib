@@ -23,32 +23,56 @@ public:
     // but exposes BCU1 system EEPROM to the user, which is not great.
     explicit UserEepromBCU1() : UserEeprom(0x100, 256, 256) {}
 
-    [[nodiscard]] uint8_t& optionReg() const override { return directAccess_8(optionRegOffset); }
-    [[nodiscard]] uint8_t& manuDataH() const override { return directAccess_8(manuDataHOffset); }
-    [[nodiscard]] uint8_t& manuDataL() const override { return directAccess_8(manuDataLOffset); }
-    [[nodiscard]] uint8_t& manufacturerH() const override { return directAccess_8(manufacturerHOffset); }
-    [[nodiscard]] uint8_t& manufacturerL() const override { return directAccess_8(manufacturerLOffset); }
-    [[nodiscard]] uint8_t& deviceTypeH() const override { return directAccess_8(deviceTypeHOffset); }
-    [[nodiscard]] uint8_t& deviceTypeL() const override { return directAccess_8(deviceTypeLOffset); }
-    [[nodiscard]] uint8_t& version() const override { return directAccess_8(versionOffset); }
-    [[nodiscard]] uint8_t& checkLimit() const override { return directAccess_8(checkLimitOffset); }
-    [[nodiscard]] uint8_t& appPeiType() const override { return directAccess_8(appPeiTypeOffset); }
-    [[nodiscard]] uint8_t& syncRate() const override { return directAccess_8(syncRateOffset); }
-    [[nodiscard]] uint8_t& portCDDR() const override { return directAccess_8(portCDDROffset); }
-    [[nodiscard]] uint8_t& portADDR() const override { return directAccess_8(portADDROffset); }
-    [[nodiscard]] uint8_t& runError() const override { return directAccess_8(runErrorOffset); }
-    [[nodiscard]] uint8_t& routeCnt() const override { return directAccess_8(routeCntOffset); }
-    [[nodiscard]] uint8_t& maxRetransmit() const override { return directAccess_8(maxRetransmitOffset); }
-    [[nodiscard]] uint8_t& confDesc() const override { return directAccess_8(confDescOffset); }
-    [[nodiscard]] uint8_t& assocTabPtr() const override { return directAccess_8(assocTabPtrOffset); }
-    [[nodiscard]] uint8_t& commsTabPtr() const override { return directAccess_8(commsTabPtrOffset); };
-    [[nodiscard]] uint8_t& usrInitPtr() const override { return directAccess_8(usrInitPtrOffset); }
-    [[nodiscard]] uint8_t& usrProgPtr() const override { return directAccess_8(usrProgPtrOffset); }
-    [[nodiscard]] virtual uint8_t& usrSavePtr() const { return directAccess_8(usrSavePtrOffset); }
-    [[nodiscard]] uint8_t& addrTabSize() const override { return directAccess_8(addrTabSizeOffset); }
+    [[nodiscard]] uint8_t optionReg() const override { return field8(optionRegOffset); }
+    void setOptionReg(const uint8_t value) override { setField8(optionRegOffset, value); }
+    [[nodiscard]] uint8_t manuDataH() const override { return field8(manuDataHOffset); }
+    void setManuDataH(const uint8_t value) override { setField8(manuDataHOffset, value); }
+    [[nodiscard]] uint8_t manuDataL() const override { return field8(manuDataLOffset); }
+    void setManuDataL(const uint8_t value) override { setField8(manuDataLOffset, value); }
+    [[nodiscard]] uint8_t manufacturerH() const override { return field8(manufacturerHOffset); }
+    void setManufacturerH(const uint8_t value) override { setField8(manufacturerHOffset, value); }
+    [[nodiscard]] uint8_t manufacturerL() const override { return field8(manufacturerLOffset); }
+    void setManufacturerL(const uint8_t value) override { setField8(manufacturerLOffset, value); }
+    [[nodiscard]] uint8_t deviceTypeH() const override { return field8(deviceTypeHOffset); }
+    void setDeviceTypeH(const uint8_t value) override { setField8(deviceTypeHOffset, value); }
+    [[nodiscard]] uint8_t deviceTypeL() const override { return field8(deviceTypeLOffset); }
+    void setDeviceTypeL(const uint8_t value) override { setField8(deviceTypeLOffset, value); }
+    [[nodiscard]] uint8_t version() const override { return field8(versionOffset); }
+    void setVersion(const uint8_t value) override { setField8(versionOffset, value); }
+    [[nodiscard]] uint8_t checkLimit() const override { return field8(checkLimitOffset); }
+    void setCheckLimit(const uint8_t value) override { setField8(checkLimitOffset, value); }
+    [[nodiscard]] uint8_t appPeiType() const override { return field8(appPeiTypeOffset); }
+    void setAppPeiType(const uint8_t value) override { setField8(appPeiTypeOffset, value); }
+    [[nodiscard]] uint8_t syncRate() const override { return field8(syncRateOffset); }
+    void setSyncRate(const uint8_t value) override { setField8(syncRateOffset, value); }
+    [[nodiscard]] uint8_t portCDDR() const override { return field8(portCDDROffset); }
+    void setPortCDDR(const uint8_t value) override { setField8(portCDDROffset, value); }
+    [[nodiscard]] uint8_t portADDR() const override { return field8(portADDROffset); }
+    void setPortADDR(const uint8_t value) override { setField8(portADDROffset, value); }
+    [[nodiscard]] uint8_t runError() const override { return field8(runErrorOffset); }
+    void setRunError(const uint8_t value) override { setField8(runErrorOffset, value); }
+    [[nodiscard]] uint8_t routeCnt() const override { return field8(routeCntOffset); }
+    void setRouteCnt(const uint8_t value) override { setField8(routeCntOffset, value); }
+    [[nodiscard]] uint8_t maxRetransmit() const override { return field8(maxRetransmitOffset); }
+    void setMaxRetransmit(const uint8_t value) override { setField8(maxRetransmitOffset, value); }
+    [[nodiscard]] uint8_t confDesc() const override { return field8(confDescOffset); }
+    void setConfDesc(const uint8_t value) override { setField8(confDescOffset, value); }
+    [[nodiscard]] uint8_t assocTabPtr() const override { return field8(assocTabPtrOffset); }
+    void setAssocTabPtr(const uint8_t value) override { setField8(assocTabPtrOffset, value); }
+    [[nodiscard]] uint8_t commsTabPtr() const override { return field8(commsTabPtrOffset); }
+    void setCommsTabPtr(const uint8_t value) override { setField8(commsTabPtrOffset, value); }
+    [[nodiscard]] uint8_t usrInitPtr() const override { return field8(usrInitPtrOffset); }
+    void setUsrInitPtr(const uint8_t value) override { setField8(usrInitPtrOffset, value); }
+    [[nodiscard]] uint8_t usrProgPtr() const override { return field8(usrProgPtrOffset); }
+    void setUsrProgPtr(const uint8_t value) override { setField8(usrProgPtrOffset, value); }
+    [[nodiscard]] virtual uint8_t usrSavePtr() const { return field8(usrSavePtrOffset); }
+    virtual void setUsrSavePtr(const uint8_t value) { setField8(usrSavePtrOffset, value); }
+    [[nodiscard]] uint8_t addrTabSize() const override { return field8(addrTabSizeOffset); }
+    void setAddrTabSize(const uint8_t value) override { setField8(addrTabSizeOffset, value); }
     [[nodiscard]] uint8_t* addrTab() const override { return &directAccess_8(addrTabOffset); }
     [[nodiscard]] virtual uint8_t* user230bytesStart() const { return &directAccess_8(user230bytesStartOffset); }
-    [[nodiscard]] virtual uint8_t& checksum() const { return directAccess_8(checksumOffset); }
+    [[nodiscard]] virtual uint8_t checksum() const { return field8(checksumOffset); }
+    virtual void setChecksum(const uint8_t value) { setField8(checksumOffset, value); }
 
 protected:
     // BCU1 has no variable EEPROM start or size, so make this constructor protected

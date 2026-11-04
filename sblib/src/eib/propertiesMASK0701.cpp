@@ -189,12 +189,12 @@ LoadState PropertiesMASK0701::handleAllocAbsTaskSegment(const int objectIdx, con
                 );
             }
 
-            bcu->userEeprom->appPeiType() = payLoad[2];
-            bcu->userEeprom->manufacturerH() = payLoad[3];
-            bcu->userEeprom->manufacturerL() = payLoad[4];
-            bcu->userEeprom->deviceTypeH() = payLoad[5];
-            bcu->userEeprom->deviceTypeL() = payLoad[6];
-            bcu->userEeprom->version() = payLoad[7];
+            bcu->userEeprom->setAppPeiType(payLoad[2]);
+            bcu->userEeprom->setManufacturerH(payLoad[3]);
+            bcu->userEeprom->setManufacturerL(payLoad[4]);
+            bcu->userEeprom->setDeviceTypeH(payLoad[5]);
+            bcu->userEeprom->setDeviceTypeL(payLoad[6]);
+            bcu->userEeprom->setVersion(payLoad[7]);
             DB_PROPERTIES(
                 serial.println("  ----> userEeprom->appPeiType = 0x", bcu->userEeprom->appPeiType(), HEX, 2);
                 serial.println("  ----> userEeprom->manufacturerH & L = 0x", makeWord(bcu->userEeprom->manufacturerH(), bcu->userEeprom->manufacturerL()), HEX, 4);

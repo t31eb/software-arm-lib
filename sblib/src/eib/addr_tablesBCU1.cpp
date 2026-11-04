@@ -30,7 +30,8 @@ int AddrTablesBCU1::indexOfAddr(const int addr)
 
 uint8_t* AddrTablesBCU1::addrTable()
 {
-    return (uint8_t*) &userEeprom->addrTabSize();
+    // The table starts with its size, one byte before the entries. Temporary until addrTable() returns no pointer.
+    return userEeprom->addrTab() - 1;
 }
 
 uint8_t* AddrTablesBCU1::assocTable()

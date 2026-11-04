@@ -26,15 +26,15 @@ static ProtocolTestState protoState[2];
 
 static void tc_eepromSetup(void)
 {
-    bcuUnderTest->userEeprom->optionReg()     = 0xFF;
-    bcuUnderTest->userEeprom->checkLimit()    = 0xFF;
-    bcuUnderTest->userEeprom->routeCnt()      = 0x60;
-    bcuUnderTest->userEeprom->maxRetransmit() = 0x63;
-    bcuUnderTest->userEeprom->confDesc()      = 0xEF;
-    bcuUnderTest->userEeprom->assocTabPtr()   = 0x41;
-    bcuUnderTest->userEeprom->commsTabPtr()   = 0x9A;
-    bcuUnderTest->userEeprom->usrInitPtr()    = 0x00;
-    bcuUnderTest->userEeprom->usrProgPtr()    = 0x00; // 0x0114
+    bcuUnderTest->userEeprom->setOptionReg(0xFF);
+    bcuUnderTest->userEeprom->setCheckLimit(0xFF);
+    bcuUnderTest->userEeprom->setRouteCnt(0x60);
+    bcuUnderTest->userEeprom->setMaxRetransmit(0x63);
+    bcuUnderTest->userEeprom->setConfDesc(0xEF);
+    bcuUnderTest->userEeprom->setAssocTabPtr(0x41);
+    bcuUnderTest->userEeprom->setCommsTabPtr(0x9A);
+    bcuUnderTest->userEeprom->setUsrInitPtr(0x00);
+    bcuUnderTest->userEeprom->setUsrProgPtr(0x00); // 0x0114
     bcuUnderTest->userEeprom->userEepromData[0x115 - EEPROM_START] = 0x00; // BCU1 -> usrSavePtr(), BCU2 -> appType()
     bcuUnderTest->userEeprom->userEepromData[0x119 - EEPROM_START] = 0x10;
     bcuUnderTest->userEeprom->userEepromData[0x11A - EEPROM_START] = 0x00;

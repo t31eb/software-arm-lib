@@ -33,7 +33,7 @@ inline void BCU2::begin(const int manufacturer, const int deviceType, const int 
     BcuDefault::begin(manufacturer, deviceType, version);
 
     userRam->peiType() = 0;    // PEI type: 0=no adapter connected to PEI.
-    userEeprom->appType() = 0; // Set to BCU2 application. ETS reads this when programming.
+    userEeprom->setAppType(0); // Set to BCU2 application. ETS reads this when programming.
 
     if (userEeprom->loadState()[OT_ADDR_TABLE] == LS_LOADING)
     {

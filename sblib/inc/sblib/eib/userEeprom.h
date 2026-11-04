@@ -43,29 +43,51 @@ public:
     //[[deprecated("Use getUInt8, getUInt16, getUInt32 or the [] operator.")]]
     alignas(FLASH_RAM_BUFFER_ALIGNMENT) uint8_t* userEepromData; // must be word aligned, otherwise iapProgram will fail
 
-    [[nodiscard]] virtual uint8_t& optionReg() const = 0;
-    [[nodiscard]] virtual uint8_t& manuDataH() const = 0;
-    [[nodiscard]] virtual uint8_t& manuDataL() const = 0;
-    [[nodiscard]] virtual uint8_t& manufacturerH() const = 0;
-    [[nodiscard]] virtual uint8_t& manufacturerL() const = 0;
-    [[nodiscard]] virtual uint8_t& deviceTypeH() const = 0;
-    [[nodiscard]] virtual uint8_t& deviceTypeL() const = 0;
-    [[nodiscard]] virtual uint8_t& version() const = 0;
-    [[nodiscard]] virtual uint8_t& checkLimit() const = 0;
-    [[nodiscard]] virtual uint8_t& appPeiType() const = 0;
-    [[nodiscard]] virtual uint8_t& syncRate() const = 0;
-    [[nodiscard]] virtual uint8_t& portCDDR() const = 0;
-    [[nodiscard]] virtual uint8_t& portADDR() const = 0;
-    [[nodiscard]] virtual uint8_t& runError() const = 0;
-    [[nodiscard]] virtual uint8_t& routeCnt() const = 0;
-    [[nodiscard]] virtual uint8_t& maxRetransmit() const = 0;
-    [[nodiscard]] virtual uint8_t& confDesc() const = 0;
-    [[nodiscard]] virtual uint8_t& assocTabPtr() const = 0;
-    [[nodiscard]] virtual uint8_t& commsTabPtr() const = 0;
-    [[nodiscard]] virtual uint8_t& usrInitPtr() const = 0;
-    [[nodiscard]] virtual uint8_t& usrProgPtr() const = 0;
+    [[nodiscard]] virtual uint8_t optionReg() const = 0;
+    virtual void setOptionReg(uint8_t value) = 0;
+    [[nodiscard]] virtual uint8_t manuDataH() const = 0;
+    virtual void setManuDataH(uint8_t value) = 0;
+    [[nodiscard]] virtual uint8_t manuDataL() const = 0;
+    virtual void setManuDataL(uint8_t value) = 0;
+    [[nodiscard]] virtual uint8_t manufacturerH() const = 0;
+    virtual void setManufacturerH(uint8_t value) = 0;
+    [[nodiscard]] virtual uint8_t manufacturerL() const = 0;
+    virtual void setManufacturerL(uint8_t value) = 0;
+    [[nodiscard]] virtual uint8_t deviceTypeH() const = 0;
+    virtual void setDeviceTypeH(uint8_t value) = 0;
+    [[nodiscard]] virtual uint8_t deviceTypeL() const = 0;
+    virtual void setDeviceTypeL(uint8_t value) = 0;
+    [[nodiscard]] virtual uint8_t version() const = 0;
+    virtual void setVersion(uint8_t value) = 0;
+    [[nodiscard]] virtual uint8_t checkLimit() const = 0;
+    virtual void setCheckLimit(uint8_t value) = 0;
+    [[nodiscard]] virtual uint8_t appPeiType() const = 0;
+    virtual void setAppPeiType(uint8_t value) = 0;
+    [[nodiscard]] virtual uint8_t syncRate() const = 0;
+    virtual void setSyncRate(uint8_t value) = 0;
+    [[nodiscard]] virtual uint8_t portCDDR() const = 0;
+    virtual void setPortCDDR(uint8_t value) = 0;
+    [[nodiscard]] virtual uint8_t portADDR() const = 0;
+    virtual void setPortADDR(uint8_t value) = 0;
+    [[nodiscard]] virtual uint8_t runError() const = 0;
+    virtual void setRunError(uint8_t value) = 0;
+    [[nodiscard]] virtual uint8_t routeCnt() const = 0;
+    virtual void setRouteCnt(uint8_t value) = 0;
+    [[nodiscard]] virtual uint8_t maxRetransmit() const = 0;
+    virtual void setMaxRetransmit(uint8_t value) = 0;
+    [[nodiscard]] virtual uint8_t confDesc() const = 0;
+    virtual void setConfDesc(uint8_t value) = 0;
+    [[nodiscard]] virtual uint8_t assocTabPtr() const = 0;
+    virtual void setAssocTabPtr(uint8_t value) = 0;
+    [[nodiscard]] virtual uint8_t commsTabPtr() const = 0;
+    virtual void setCommsTabPtr(uint8_t value) = 0;
+    [[nodiscard]] virtual uint8_t usrInitPtr() const = 0;
+    virtual void setUsrInitPtr(uint8_t value) = 0;
+    [[nodiscard]] virtual uint8_t usrProgPtr() const = 0;
+    virtual void setUsrProgPtr(uint8_t value) = 0;
 
-    [[nodiscard]] virtual uint8_t& addrTabSize() const = 0;
+    [[nodiscard]] virtual uint8_t addrTabSize() const = 0;
+    virtual void setAddrTabSize(uint8_t value) = 0;
     [[nodiscard]] virtual uint8_t* addrTab() const = 0;
 
     /**
@@ -178,15 +200,16 @@ protected:
     /**
      * @brief Value of a byte of the user EEPROM, by offset from its start (no @ref startAddress involved).
      * @details Used by the named getters of the system fields. Pointer free replacement of @ref directAccess_8.
+     *          Without a range check: @p offset is a constant of the derived class and always inside.
      */
-    [[nodiscard]] uint8_t field8(uint32_t offset) const;
+    [[nodiscard]] uint8_t field8(const uint32_t offset) const { return userEepromData[offset]; }
 
     /**
      * @brief Set a byte of the user EEPROM, by offset from its start.
      * @details Does not mark the memory as modified, like an assignment through the former references.
      *          Call @ref modified() to persist the change.
      */
-    void setField8(uint32_t offset, uint8_t value);
+    void setField8(const uint32_t offset, const uint8_t value) { userEepromData[offset] = value; }
 
     /**
      * @brief Value of a 16 bit field of the user EEPROM, low byte first, by offset from its start.

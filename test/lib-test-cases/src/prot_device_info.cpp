@@ -81,7 +81,7 @@ static void tc_eepromSetup(void)
 {
     bcuUnderTest->userEeprom->addrTab()[0] = 0x11;  // sets own address to 1.1.126
     bcuUnderTest->userEeprom->addrTab()[1] = 0x7E;  // sets own address to 1.1.126
-    bcuUnderTest->userEeprom->appPeiType() = 0x00;
+    bcuUnderTest->userEeprom->setAppPeiType(0x00);
 }
 
 static void tc_setup(Telegram* tel, uint16_t telCount)

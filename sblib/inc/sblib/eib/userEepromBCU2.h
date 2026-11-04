@@ -30,7 +30,8 @@ public:
     [[nodiscard]] virtual uint32_t orderSize() const { return 10; };
     [[nodiscard]] virtual uint32_t orderInfoSize() const { return 10; };
 
-    [[nodiscard]] virtual uint8_t& appType() const { return directAccess_8(appTypeOffset); }
+    [[nodiscard]] virtual uint8_t appType() const { return field8(appTypeOffset); }
+    virtual void setAppType(const uint8_t value) { setField8(appTypeOffset, value); }
     [[nodiscard]] virtual uint8_t* loadState() const { return &directAccess_8(loadStateOffset); }
     [[nodiscard]] virtual uint16_t commsTabAddr() const { return field16(commsTabAddrOffset); }
     virtual void setCommsTabAddr(const uint16_t value) { setField16(commsTabAddrOffset, value); }
@@ -40,7 +41,8 @@ public:
     virtual void setCommsSeg1Addr(const uint16_t value) { setField16(commsSeg1AddrOffset, value); }
     [[nodiscard]] virtual uint16_t eibObjAddr() const { return field16(eibObjAddrOffset); }
     virtual void setEibObjAddr(const uint16_t value) { setField16(eibObjAddrOffset, value); }
-    [[nodiscard]] virtual uint8_t& eibObjCount() const { return directAccess_8(eibObjCountOffset); }
+    [[nodiscard]] virtual uint8_t eibObjCount() const { return field8(eibObjCountOffset); }
+    virtual void setEibObjCount(const uint8_t value) { setField8(eibObjCountOffset, value); }
     [[nodiscard]] virtual uint16_t addrTabAddr() const { return field16(addrTabAddrOffset); }
     virtual void setAddrTabAddr(const uint16_t value) { setField16(addrTabAddrOffset, value); }
     [[nodiscard]] virtual uint16_t assocTabAddr() const { return field16(assocTabAddrOffset); }
@@ -48,9 +50,12 @@ public:
     [[nodiscard]] virtual uint8_t* serial() const { return &directAccess_8(serialOffset); }
     [[nodiscard]] virtual uint8_t* order() const { return &directAccess_8(orderOffset); }
 
-    [[nodiscard]] virtual uint8_t& padding1() const { return directAccess_8(padding1Offset); }
-    [[nodiscard]] virtual uint8_t& serviceControl() const { return directAccess_8(serviceControlOffset); }
-    [[nodiscard]] virtual uint8_t& padding2() const { return directAccess_8(padding2Offset); }
+    [[nodiscard]] virtual uint8_t padding1() const { return field8(padding1Offset); }
+    virtual void setPadding1(const uint8_t value) { setField8(padding1Offset, value); }
+    [[nodiscard]] virtual uint8_t serviceControl() const { return field8(serviceControlOffset); }
+    virtual void setServiceControl(const uint8_t value) { setField8(serviceControlOffset, value); }
+    [[nodiscard]] virtual uint8_t padding2() const { return field8(padding2Offset); }
+    virtual void setPadding2(const uint8_t value) { setField8(padding2Offset, value); }
     [[nodiscard]] virtual uint8_t* orderInfo() const { return &directAccess_8(orderInfoOffset); }
 
 protected:

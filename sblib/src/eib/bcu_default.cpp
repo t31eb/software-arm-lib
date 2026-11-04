@@ -84,16 +84,16 @@ void BcuDefault::begin(const int manufacturer, const int deviceType, const int v
     userRam->runState() = 1;
 
     ///\todo why we touch runError here ? KNX spec 2.1 9/4/1 4.1.10.3.13 p.31 states "They shall be explicitly cleared by a management-tool."
-    userEeprom->runError() = 0xff;
-    userEeprom->portADDR() = 0;
+    userEeprom->setRunError(0xff);
+    userEeprom->setPortADDR(0);
 
-    userEeprom->manufacturerH() = HIGH_BYTE(manufacturer);
-    userEeprom->manufacturerL() = lowByte(manufacturer);
+    userEeprom->setManufacturerH(HIGH_BYTE(manufacturer));
+    userEeprom->setManufacturerL(lowByte(manufacturer));
 
-    userEeprom->deviceTypeH() = HIGH_BYTE(deviceType);
-    userEeprom->deviceTypeL() = lowByte(deviceType);
+    userEeprom->setDeviceTypeH(HIGH_BYTE(deviceType));
+    userEeprom->setDeviceTypeL(lowByte(deviceType));
 
-    userEeprom->version() = version;
+    userEeprom->setVersion(version);
 
     userEeprom->modified(false);
 }

@@ -26,7 +26,7 @@ static ProtocolTestState protoState[2];
 
 static void tc_eepromSetup(void)
 {
-    bcuUnderTest->userEeprom->assocTabPtr() = 0x19;
+    bcuUnderTest->userEeprom->setAssocTabPtr(0x19);
     //bcuUnderTest->userEeprom[0x119] = 0x14;
     bcuUnderTest->userEeprom->userEepromData[0x119 - EEPROM_START] = 0x14;
     bcuUnderTest->userEeprom->userEepromData[0x11A - EEPROM_START] = 0xFE;
