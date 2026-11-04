@@ -166,6 +166,19 @@ uint8_t* BcuDefault::userMemoryPtr(const unsigned int addr) const
     return nullptr;
 }
 
+bool BcuDefault::readUserMemory(const uint32_t virtAddress, uint8_t* buffer, const uint32_t length) const
+{
+    if (userEeprom->inRange(virtAddress))
+    {
+        return userEeprom->readBlock(virtAddress, buffer, length);
+    }
+    else if (userRam->inRange(virtAddress))
+    {
+        return userRam->readBlock(virtAddress, buffer, length);
+    }
+    return false;
+}
+
 void BcuDefault::setMemMapper(MemMapper* mapper)
 {
     memMapper = mapper;

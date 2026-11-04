@@ -11,6 +11,8 @@
 #include "sblib/eib/knx_lpdu.h"
 #include "sblib/utils.h"
 
+#include <algorithm>
+
 #if defined(INCLUDE_SERIAL)
 #   include "sblib/serial.h"
 #endif
@@ -71,9 +73,6 @@ void ComObjectsBCU1::processGroupTelegram(const uint16_t addr, const int apci, u
     /**
      * Spec: Resources 4.11.2 Group Object Association Table - Realization Type 1
      */
-    const uint8_t* assocTab = bcu->addrTables->assocTable();
-    const int endAssoc = 1 + (*assocTab) * 2;
-
     DB_COM_OBJ(
         serial.print("grpAddr ", mainGroupAddress(addr));
         serial.print("/", middleGroupAddress(addr));
@@ -92,59 +91,74 @@ void ComObjectsBCU1::processGroupTelegram(const uint16_t addr, const int apci, u
         DB_COM_OBJ(serial.println(gapos););
     }
 
-    // Loop over all entries in the association table, as one group address
-    // could be assigned to multiple com-objects.
-    for (int idx = 1; idx < endAssoc; idx += 2)
+    uint8_t assocCount = 0;
+    if (!bcu->addrTables->readAssocTable(0, &assocCount, 1))
     {
-        // Check if grp-address index in assoc table matches the dest grp address index
-        if (gapos != assocTab[idx])
+        return;
+    }
+
+    // Loop over all entries in the association table, as one group address
+    // could be assigned to multiple com-objects. The table is read in chunks, entry i starts at offset 1 + 2 * i.
+    uint8_t chunk[2 * TABLE_READ_CHUNK];
+    for (int first = 0; first < assocCount; first += TABLE_READ_CHUNK)
+    {
+        const int entries = std::min(TABLE_READ_CHUNK, assocCount - first);
+        if (!bcu->addrTables->readAssocTable(1 + 2 * first, chunk, 2 * entries))
         {
-            continue;
+            return;
         }
-        // We found an association for our addr
-        const int objno = assocTab[idx + 1]; // Get the com-object number from the assoc table
-        DB_COM_OBJ(serial.println("objno  : ", objno););
-
-        if (objno == trg_objno)
+        for (int entry = 0; entry < entries; ++entry)
         {
-            DB_COM_OBJ(serial.println("triggered by app ", objno););
-            continue; // no update of the object triggered by the app
-        }
+            // Check if grp-address index in assoc table matches the dest grp address index
+            if (gapos != chunk[2 * entry])
+            {
+                continue;
+            }
+            // We found an association for our addr
+            const int objno = chunk[2 * entry + 1]; // Get the com-object number from the assoc table
+            DB_COM_OBJ(serial.println("objno  : ", objno););
 
-        //DB_COM_OBJ(serial.println("commsTabAddr: 0x", ((UserEepromBCU1*)((BcuDefault*)bcu)->userEeprom)->commsTabAddr(), HEX););
-        const uint8_t objConf = objectConfig(objno).config;
-        DB_COM_OBJ(serial.println("objConf: 0x", objConf, HEX, 2););
+            if (objno == trg_objno)
+            {
+                DB_COM_OBJ(serial.println("triggered by app ", objno););
+                continue; // no update of the object triggered by the app
+            }
 
-        if ((objConf & COMCONF_COMM) != COMCONF_COMM)
-        {
-            // communication is disabled, just continue and check remaining associations
-            continue;
-        }
+            //DB_COM_OBJ(serial.println("commsTabAddr: 0x", ((UserEepromBCU1*)((BcuDefault*)bcu)->userEeprom)->commsTabAddr(), HEX););
+            const uint8_t objConf = objectConfig(objno).config;
+            DB_COM_OBJ(serial.println("objConf: 0x", objConf, HEX, 2););
 
-        switch (apci)
-        {
-            case APCI_GROUP_VALUE_WRITE_PDU:
-                // Check if write is enabled
-                if ((objConf & COMCONF_WRITE) == COMCONF_WRITE)
-                    processGroupWriteTelegram(objno, tel); // set update flag and update value of object
-                break;
+            if ((objConf & COMCONF_COMM) != COMCONF_COMM)
+            {
+                // communication is disabled, just continue and check remaining associations
+                continue;
+            }
 
-            case APCI_GROUP_VALUE_RESPONSE_PDU:
-                // Check if update is enabled
-                if ((objConf & COMCONF_UPDATE) == COMCONF_UPDATE)
-                    processGroupWriteTelegram(objno, tel); // set update flag and update value of object
-                break;
+            switch (apci)
+            {
+                case APCI_GROUP_VALUE_WRITE_PDU:
+                    // Check if write is enabled
+                    if ((objConf & COMCONF_WRITE) == COMCONF_WRITE)
+                        processGroupWriteTelegram(objno, tel); // set update flag and update value of object
+                    break;
 
-            case APCI_GROUP_VALUE_READ_PDU:
-                // Check if read is enabled
-                if ((objConf & COMCONF_READ) == COMCONF_READ)
-                    // we received read-request from bus - so send response back and search for more associations
-                    sendGroupWriteTelegram(objno, addr, true); // send write to the bus and update all associated local objects
-                break;
+                case APCI_GROUP_VALUE_RESPONSE_PDU:
+                    // Check if update is enabled
+                    if ((objConf & COMCONF_UPDATE) == COMCONF_UPDATE)
+                        processGroupWriteTelegram(objno, tel); // set update flag and update value of object
+                    break;
 
-            default:
-                // this should never happen
-                IF_DEBUG(fatalError(););
+                case APCI_GROUP_VALUE_READ_PDU:
+                    // Check if read is enabled
+                    if ((objConf & COMCONF_READ) == COMCONF_READ)
+                        // we received read-request from bus - so send response back and search for more associations
+                        sendGroupWriteTelegram(objno, addr, true); // send write to the bus and update all associated local objects
+                    break;
+
+                default:
+                    // this should never happen
+                    IF_DEBUG(fatalError(););
+            }
         }
     }
 }

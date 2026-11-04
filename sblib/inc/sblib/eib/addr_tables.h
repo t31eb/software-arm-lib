@@ -13,6 +13,12 @@
 #include <cstdint>
 #include <sblib/types.h>
 
+/**
+ * Number of table entries read at once when scanning the address or association table.
+ * Bigger values need more stack, smaller ones more read calls (with an external EEPROM one transaction each).
+ */
+constexpr int TABLE_READ_CHUNK = 16;
+
 class AddrTables
 {
 public:
@@ -51,6 +57,16 @@ public:
      * 1 byte addr-table index, 1 byte com-object number.
      */
     virtual uint8_t* assocTable() = 0;
+
+    /**
+     * Read a part of the association table, without a pointer into the memory.
+     *
+     * @param offset Offset of the first byte to read, 0 is the number of entries.
+     * @param buffer Buffer of at least @p length bytes, provided by the caller.
+     * @param length Number of bytes to read.
+     * @return true if the bytes were read, false if there is no table or the bytes are outside of the user memory.
+     */
+    [[nodiscard]] virtual bool readAssocTable(uint32_t offset, uint8_t* buffer, uint32_t length) = 0;
 
     /**
      * Get total number of address entries

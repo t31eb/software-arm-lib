@@ -54,6 +54,8 @@ public:
      */
     uint8_t* assocTable() override;
 
+    [[nodiscard]] bool readAssocTable(uint32_t offset, uint8_t* buffer, uint32_t length) override;
+
 private:
     UserEeprom* userEeprom;
 };

@@ -54,7 +54,22 @@ public:
      */
     uint8_t* assocTable() override;
 
+    [[nodiscard]] bool readAssocTable(uint32_t offset, uint8_t* buffer, uint32_t length) override;
+
+    /**
+     * Read a part of the address table, without a pointer into the memory.
+     *
+     * @param offset Offset of the first byte to read, 0 is the number of entries.
+     * @param buffer Buffer of at least @p length bytes, provided by the caller.
+     * @param length Number of bytes to read.
+     * @return true if the bytes were read, false if there is no table or the bytes are outside of the user memory.
+     */
+    [[nodiscard]] bool readAddrTable(uint32_t offset, uint8_t* buffer, uint32_t length);
+
 private:
+    /** @return The virtual address stored in a table pointer of the user EEPROM, low byte first. */
+    static uint16_t tableAddress(const uint16_t& tablePointer);
+
     BCU2* bcu;
 };
 

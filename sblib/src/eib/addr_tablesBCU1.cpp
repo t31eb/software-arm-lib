@@ -37,3 +37,8 @@ uint8_t* AddrTablesBCU1::assocTable()
 {
     return userEeprom->userEepromData + userEeprom->assocTabPtr();
 }
+
+bool AddrTablesBCU1::readAssocTable(const uint32_t offset, uint8_t* buffer, const uint32_t length)
+{
+    return userEeprom->readBlock(userEeprom->startAddr() + userEeprom->assocTabPtr() + offset, buffer, length);
+}

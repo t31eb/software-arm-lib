@@ -131,6 +131,17 @@ public:
     uint8_t* userMemoryPtr(unsigned int addr) const;
 
     /**
+     * Read bytes of the user memory (user EEPROM or user RAM) by virtual address, without a pointer into the memory.
+     * The pointer free counterpart of @ref userMemoryPtr: the memory is chosen by @p virtAddress like there.
+     *
+     * @param virtAddress Virtual address of the first byte.
+     * @param buffer      Buffer of at least @p length bytes, provided by the caller.
+     * @param length      Number of bytes to read.
+     * @return true if all bytes were read, false if they are not in one of the two memories.
+     */
+    [[nodiscard]] bool readUserMemory(uint32_t virtAddress, uint8_t* buffer, uint32_t length) const;
+
+    /**
      * Returns a pointer to the instance of the MemMapper object of the BCU
      * @return a pointer to the instance of the MemMapper object, in case of error return is nullptr
      */
