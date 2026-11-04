@@ -209,7 +209,7 @@ public:
      * Returns the config of the specified communication object.
      *
      * @param objno The ID of the communication object
-     * @return The communication object's configuration.
+     * @return The communication object's configuration, a copy. {0, 0} (no communication) if there is no table.
      *
      * Remark:
      * The first byte of the com table is the number of entries, followed
@@ -219,7 +219,7 @@ public:
      * BCU types. Therefore the sizeof operator is used instead of hard-coded
      * values.
      */
-    virtual const ComConfig& objectConfig(int objno) = 0;
+    virtual ComConfig objectConfig(int objno) = 0;
 
     void processGroupTelegram(int addr, int apci, uint8_t* tel);
 
@@ -253,6 +253,16 @@ public:
      * @return Pointer to com-objects configuration table.
      */
     virtual uint8_t* objectConfigTable() = 0;
+
+    /**
+     * Read a part of the communication object configuration table, without a pointer into the memory.
+     *
+     * @param offset Offset of the first byte to read, 0 is the number of objects.
+     * @param buffer Buffer of at least @p length bytes, provided by the caller.
+     * @param length Number of bytes to read.
+     * @return true if the bytes were read, false if there is no table or the bytes are outside of the user memory.
+     */
+    [[nodiscard]] virtual bool readObjectConfigTable(uint32_t offset, uint8_t* buffer, uint32_t length) = 0;
 
     /**
      * Get the communication object status flags table. This is the table with the

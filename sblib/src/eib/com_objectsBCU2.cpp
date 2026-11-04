@@ -9,14 +9,26 @@
 #include <sblib/eib/bcu2.h>
 #include <sblib/bits.h>
 
+#include <cstddef>
+
+namespace
+{
+/** Offset of the entry of com object @p objno in the table: behind the count and the flags table pointer */
+constexpr uint32_t entryOffset(const int objno)
+{
+    return 1 + sizeof(ComConfigBCU2::DataPtrType) + objno * sizeof(ComConfigBCU2);
+}
+}
+
 uint8_t* ComObjectsBCU2::objectValuePtr(const int objno)
 {
-    // The object configuration
-    const ComConfigBCU2* cfg = objectConfigBCU2(objno);
-
     // TODO Should handle userRam.segment0addr and userRam.segment1addr here
     // if (cfg.config & COMCONF_VALUE_TYPE) // 0 if segment 0, !=0 if segment 1
-    const auto addr = reinterpret_cast<const uint8_t*>(&cfg->dataPtr);
+    uint8_t addr[sizeof(ComConfigBCU2::DataPtrType)];
+    if (!readObjectConfigTable(entryOffset(objno) + offsetof(ComConfigBCU2, dataPtr), addr, sizeof(addr)))
+    {
+        return nullptr; // before, a missing table dereferenced a null pointer
+    }
     if (le_ptr == LITTLE_ENDIAN)
         return ((BcuDefault*)bcu)->userMemoryPtr(makeWord(addr[1], addr[0]));
     else
@@ -29,9 +41,23 @@ uint8_t* ComObjectsBCU2::objectConfigTable()
     return ((BcuDefault*)bcu)->userMemoryPtr(comObjTableAddr);
 }
 
+bool ComObjectsBCU2::readObjectConfigTable(const uint32_t offset, uint8_t* buffer, const uint32_t length)
+{
+    const uint16_t comObjTableAddr = ((BCU2*)bcu)->userEeprom->commsTabAddr();
+    if (comObjTableAddr == 0)
+    {
+        return false;
+    }
+    return ((BcuDefault*)bcu)->readUserMemory(comObjTableAddr + offset, buffer, length);
+}
+
 uint8_t* ComObjectsBCU2::objectFlagsTable()
 {
-    const uint8_t* configTable = objectConfigTable();
+    uint8_t configTable[3];
+    if (!readObjectConfigTable(0, configTable, sizeof(configTable)))
+    {
+        return nullptr; // before, a missing table dereferenced a null pointer
+    }
     uint16_t flagsTableAddress;
 
     if (le_ptr == LITTLE_ENDIAN)
@@ -45,20 +71,16 @@ uint8_t* ComObjectsBCU2::objectFlagsTable()
     return ((BcuDefault*)bcu)->userMemoryPtr(flagsTableAddress);
 }
 
-const ComConfigBCU2* ComObjectsBCU2::objectConfigBCU2(const int objno)
+ComConfig ComObjectsBCU2::objectConfig(const int objno)
 {
-    const uint8_t* configTable = objectConfigTable();
-    if (configTable == nullptr)
+    ComConfig config {0, 0};
+    uint8_t bytes[sizeof(ComConfig)];
+    if (readObjectConfigTable(entryOffset(objno) + offsetof(ComConfigBCU2, baseConfig), bytes, sizeof(bytes)))
     {
-        return (nullptr);
+        config.config = bytes[0];
+        config.type = bytes[1];
     }
-    const uint16_t offSet = 1 + sizeof(ComConfigBCU2::DataPtrType) + objno * sizeof(ComConfigBCU2);
-    return (const ComConfigBCU2*) (configTable + offSet);
-}
-
-const ComConfig& ComObjectsBCU2::objectConfig(const int objno)
-{
-    return objectConfigBCU2(objno)->baseConfig;
+    return config; // before, a missing table dereferenced a null pointer
 }
 
 void ComObjectsBCU2::printObjectConfigTable()

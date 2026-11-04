@@ -186,7 +186,19 @@ uint8_t* ComObjectsBCU1::objectFlagsTable() // stored in RAM
     return ((BcuDefault*)bcu)->userMemoryPtr(*objCfgTablePtr);
 }
 
-inline const ComConfig& ComObjectsBCU1::objectConfig(const int objno) { return objectConfigBCU1(objno)->baseConfig; }
+ComConfig ComObjectsBCU1::objectConfig(const int objno) { return objectConfigBCU1(objno)->baseConfig; }
+
+bool ComObjectsBCU1::readObjectConfigTable(const uint32_t offset, uint8_t* buffer, const uint32_t length)
+{
+    const uint16_t commsTabPtr = ((BcuDefault*)bcu)->userEeprom->commsTabPtr();
+    if (commsTabPtr == 0)
+    {
+        return false;
+    }
+    // for BCU1 add 0x100
+    return ((BcuDefault*)bcu)->readUserMemory(((BcuDefault*)bcu)->userEeprom->startAddr() + commsTabPtr + offset, buffer,
+                                              length);
+}
 
 inline const ComConfigBCU1* ComObjectsBCU1::objectConfigBCU1(const int objno)
 {

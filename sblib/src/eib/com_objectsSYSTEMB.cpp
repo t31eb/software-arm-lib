@@ -56,7 +56,6 @@ void ComObjectsSYSTEMB::processGroupTelegram(const uint16_t addr, const int apci
     //
     // Spec: Resources 4.11.4 Group Object Association Table - Realization Type 6
     //
-    const ComConfig* configTab = &objectConfig(0);
     const uint8_t* assocTab = bcu->addrTables->assocTable();
     const int endAssoc = 2 + makeWord(assocTab[0], assocTab[1]) * 4; // length field has 2 octets and each entry has 4 octets on SYSTEM B
 
@@ -78,7 +77,8 @@ void ComObjectsSYSTEMB::processGroupTelegram(const uint16_t addr, const int apci
             if (objno == trg_objno)
                 continue; // no update of the object triggered by the app
 
-            const int objConf = configTab[objno].config;
+            // same byte as the former configTab[objno] with configTab = &objectConfig(0), both entries have 2 bytes
+            const int objConf = objectConfig(objno).config;
 
             if (apci == APCI_GROUP_VALUE_WRITE_PDU || apci == APCI_GROUP_VALUE_RESPONSE_PDU)
             {
@@ -111,7 +111,12 @@ uint8_t* ComObjectsSYSTEMB::objectFlagsTable()
     return ((BcuDefault*)bcu)->userMemoryPtr(makeWord(configTable[1], configTable[2]));
 }
 
-inline const ComConfig& ComObjectsSYSTEMB::objectConfig(const int objno)
+ComConfig ComObjectsSYSTEMB::objectConfig(const int objno)
 {
     return (*(const ComConfigSYSTEMB*) (objectConfigTable() + 2 + (objno - 1) * sizeof(ComConfigSYSTEMB))).baseConfig;
+}
+
+bool ComObjectsSYSTEMB::readObjectConfigTable(const uint32_t offset, uint8_t* buffer, const uint32_t length)
+{
+    return ((BcuDefault*)bcu)->readUserMemory(((SYSTEMB*)bcu)->userEeprom->commsTabAddr() + offset, buffer, length);
 }

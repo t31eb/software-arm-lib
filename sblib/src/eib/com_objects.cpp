@@ -316,7 +316,12 @@ void ComObjects::_objectWriteBytes(const int objno, const uint8_t* value, const 
 inline int ComObjects::objectCount()
 {
     // The first byte of the config table contains the number of com-objects
-    return *objectConfigTable();
+    uint8_t count = 0;
+    if (!readObjectConfigTable(0, &count, 1))
+    {
+        return 0; // before, a missing table dereferenced a null pointer
+    }
+    return count;
 }
 
 int ComObjects::firstObjectAddr(const int objno) const
@@ -457,7 +462,7 @@ bool ComObjects::sendNextGroupTelegram()
             continue; // nothing to send for this object
         }
 
-        const ComConfig& configTab = objectConfig(objno);
+        const ComConfig configTab = objectConfig(objno);
         const uint16_t config = configTab.config;
         const uint16_t addr = firstObjectAddr(objno);
 

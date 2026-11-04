@@ -48,10 +48,10 @@ protected:
     uint8_t* objectValuePtr(int objno) override;
     uint8_t* objectConfigTable() override;
     uint8_t* objectFlagsTable() override;
-    const ComConfig& objectConfig(int objno) override;
+    ComConfig objectConfig(int objno) override;
+    [[nodiscard]] bool readObjectConfigTable(uint32_t offset, uint8_t* buffer, uint32_t length) override;
 
 private:
-    const ComConfigBCU2* objectConfigBCU2(int objno);
 };
 
 #endif /* SBLIB_KNX_COM_OBJECTS_BCU2_H_ */

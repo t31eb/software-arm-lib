@@ -41,13 +41,14 @@ class ComObjectsSYSTEMB : public ComObjectsMASK0701
 public:
     explicit ComObjectsSYSTEMB(BcuDefault* bcuInstance) : ComObjectsMASK0701(bcuInstance) {}
 
-    inline const ComConfig& objectConfig(int objno) override;
+    ComConfig objectConfig(int objno) override;
 
 protected:
     int objectSize(int objno) override;
     uint8_t* objectValuePtr(int objno) override;
     void processGroupTelegram(uint16_t addr, int apci, uint8_t* tel, int trg_objno) override;
     uint8_t* objectConfigTable() override;
+    [[nodiscard]] bool readObjectConfigTable(uint32_t offset, uint8_t* buffer, uint32_t length) override;
     uint8_t* objectFlagsTable() override;
 };
 
