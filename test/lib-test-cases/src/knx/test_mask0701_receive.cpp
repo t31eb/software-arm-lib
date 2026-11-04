@@ -27,7 +27,7 @@ namespace
 Data groupTelegram(const uint16_t groupAddress, const uint16_t apci, const uint8_t data0, const uint8_t data1,
                    const uint8_t shortValue)
 {
-    return {0xBC, 0x11, 0x01, HIGH_BYTE(groupAddress), lowByte(groupAddress), 0xE3,
+    return {0xBC, 0x11, 0x01, static_cast<uint8_t>(HIGH_BYTE(groupAddress)), static_cast<uint8_t>(lowByte(groupAddress)), 0xE3,
             static_cast<uint8_t>(apci >> 8), static_cast<uint8_t>((apci & 0xC0) | (shortValue & 0x3F)), data0, data1};
 }
 
