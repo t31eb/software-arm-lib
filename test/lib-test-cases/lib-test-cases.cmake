@@ -41,6 +41,7 @@ set(SBLIB_LIB_TEST_CASES_SRC
         src/knx/test_mask0701_persistence.cpp
         src/knx/test_mask0701_master_reset.cpp
         src/knx/test_mask0701_send.cpp
+        src/knx/test_mask0701_receive.cpp
         src/knx/test_memory_api.cpp
         src/test_spi_eeprom.cpp
 )
