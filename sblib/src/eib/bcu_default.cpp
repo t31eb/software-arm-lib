@@ -373,15 +373,14 @@ bool BcuDefault::processApciMemoryOperation(unsigned int addressStart, uint8_t* 
         if (userEeprom->inRange(addressStart, addressEnd)) // start & end in userEeprom ?
         {
             const int copyCount = addressEnd - addressStart + 1;
-            uint8_t* mem = this->userMemoryPtr(addressStart);
+            // the range is checked, so the block operations can't fail; writeBlock() marks the memory as modified
             if (readMem)
             {
-                memcpy(&payLoad[0], mem, copyCount);
+                (void) userEeprom->readBlock(addressStart, &payLoad[0], copyCount);
             }
             else
             {
-                memcpy(mem, &payLoad[0], copyCount);
-                userEeprom->modified(true);
+                (void) userEeprom->writeBlock(addressStart, &payLoad[0], copyCount);
             }
             DB_MEM_OPS(serial.println(" -> EEPROM ", copyCount, DEC));
             return (true);
@@ -390,15 +389,13 @@ bool BcuDefault::processApciMemoryOperation(unsigned int addressStart, uint8_t* 
         {
             // start is in USER_EEPROM, but payLoad is too long, we need to cut it down to fit
             const int copyCount = (userEeprom->endAddr() - addressStart + 1);
-            uint8_t* mem = this->userMemoryPtr(addressStart);
             if (readMem)
             {
-                memcpy(&payLoad[0], mem, copyCount);
+                (void) userEeprom->readBlock(addressStart, &payLoad[0], copyCount);
             }
             else
             {
-                memcpy(mem, &payLoad[0], copyCount);
-                userEeprom->modified(true);
+                (void) userEeprom->writeBlock(addressStart, &payLoad[0], copyCount);
             }
             addressStart += copyCount;
             payLoad += copyCount;
