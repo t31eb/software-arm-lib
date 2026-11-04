@@ -178,6 +178,19 @@ bool BcuDefault::readUserMemory(const uint32_t virtAddress, uint8_t* buffer, con
     return false;
 }
 
+bool BcuDefault::writeUserMemory(const uint32_t virtAddress, const uint8_t* buffer, const uint32_t length)
+{
+    if (userEeprom->inRange(virtAddress))
+    {
+        return userEeprom->writeBlock(virtAddress, buffer, length);
+    }
+    else if (userRam->inRange(virtAddress))
+    {
+        return userRam->writeBlock(virtAddress, buffer, length);
+    }
+    return false;
+}
+
 void BcuDefault::setMemMapper(MemMapper* mapper)
 {
     memMapper = mapper;

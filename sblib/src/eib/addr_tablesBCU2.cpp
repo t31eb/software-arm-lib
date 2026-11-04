@@ -57,6 +57,11 @@ bool AddrTablesBCU2::readAddrTable(const uint32_t offset, uint8_t* buffer, const
     return bcu->readUserMemory(bcu->userEeprom->addrTabAddr() + offset, buffer, length);
 }
 
+bool AddrTablesBCU2::writeAddrTable(const uint32_t offset, const uint8_t* buffer, const uint32_t length)
+{
+    return bcu->writeUserMemory(bcu->userEeprom->addrTabAddr() + offset, buffer, length);
+}
+
 bool AddrTablesBCU2::readAssocTable(const uint32_t offset, uint8_t* buffer, const uint32_t length)
 {
     return bcu->readUserMemory(bcu->userEeprom->assocTabAddr() + offset, buffer, length);

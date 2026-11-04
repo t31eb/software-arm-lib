@@ -142,6 +142,14 @@ public:
     [[nodiscard]] bool readUserMemory(uint32_t virtAddress, uint8_t* buffer, uint32_t length) const;
 
     /**
+     * Write bytes of the user memory (user EEPROM or user RAM) by virtual address, without a pointer into the memory.
+     * The memory is chosen by @p virtAddress like in @ref userMemoryPtr. Writing the user EEPROM marks it as modified.
+     *
+     * @return true if all bytes were written, false if they are not in one of the two memories.
+     */
+    bool writeUserMemory(uint32_t virtAddress, const uint8_t* buffer, uint32_t length);
+
+    /**
      * Returns a pointer to the instance of the MemMapper object of the BCU
      * @return a pointer to the instance of the MemMapper object, in case of error return is nullptr
      */

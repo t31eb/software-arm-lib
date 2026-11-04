@@ -7,6 +7,8 @@
 
 #include <sblib/eib/addr_tablesBCU1.h>
 
+#include <cstring>
+
 int AddrTablesBCU1::indexOfAddr(const int addr)
 {
     uint8_t* tab = addrTable();
@@ -37,6 +39,13 @@ uint8_t* AddrTablesBCU1::addrTable()
 uint8_t* AddrTablesBCU1::assocTable()
 {
     return userEeprom->userEepromData + userEeprom->assocTabPtr();
+}
+
+bool AddrTablesBCU1::readAddrTable(const uint32_t offset, uint8_t* buffer, const uint32_t length)
+{
+    // BCU1 is not converted, the table stays where addrTable() points to
+    memcpy(buffer, addrTable() + offset, length);
+    return true;
 }
 
 bool AddrTablesBCU1::readAssocTable(const uint32_t offset, uint8_t* buffer, const uint32_t length)

@@ -12,6 +12,10 @@
 
 uint16_t AddrTables::addrCount()
 {
-    const uint8_t* ptrAddrTable = addrTable();
-    return (*ptrAddrTable);
+    uint8_t count = 0;
+    if (!readAddrTable(0, &count, 1))
+    {
+        return 0; // before, a missing table dereferenced a null pointer
+    }
+    return count;
 }

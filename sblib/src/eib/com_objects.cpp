@@ -187,6 +187,8 @@
 #include <sblib/eib/bcu_base.h>
 #include <sblib/eib/bus.h>
 
+#include <algorithm>
+
 /** The COMFLAG_UPDATE flag, moved to the high nibble */
 #define COMFLAG_UPDATE_HIGH (COMFLAG_UPDATE << 4)
 
@@ -326,24 +328,42 @@ inline int ComObjects::objectCount()
 
 int ComObjects::firstObjectAddr(const int objno) const
 {
-    const uint8_t* assocTab = bcu->addrTables->assocTable();
-    const uint8_t* assocTabEnd = assocTab + (*assocTab << 1);
-
-    for (++assocTab; assocTab < assocTabEnd; assocTab += 2)
+    uint8_t assocCount = 0;
+    if (!bcu->addrTables->readAssocTable(0, &assocCount, 1))
     {
-        if (assocTab[1] != objno)
-        {
-            continue;
-        }
-        uint16_t addressTablePos = (assocTab[0]) + 1; // +1 because first address in addressTable is our own address
+        return 0;
+    }
 
-        if (addressTablePos > bcu->addrTables->addrCount())
+    // The association table is read in chunks, entry i starts at offset 1 + 2 * i
+    uint8_t chunk[2 * TABLE_READ_CHUNK];
+    for (int first = 0; first < assocCount; first += TABLE_READ_CHUNK)
+    {
+        const int entries = std::min(TABLE_READ_CHUNK, assocCount - first);
+        if (!bcu->addrTables->readAssocTable(1 + 2 * first, chunk, 2 * entries))
         {
-            continue;
+            return 0;
         }
+        for (int entry = 0; entry < entries; ++entry)
+        {
+            if (chunk[2 * entry + 1] != objno)
+            {
+                continue;
+            }
+            const uint8_t addressIndex = chunk[2 * entry];
+            uint16_t addressTablePos = addressIndex + 1; // +1 because first address in addressTable is our own address
 
-        const uint8_t* addr = bcu->addrTables->addrTable() + 1 + (assocTab[0] << 1);
-        return ((addr[0] << 8) | addr[1]);
+            if (addressTablePos > bcu->addrTables->addrCount())
+            {
+                continue;
+            }
+
+            uint8_t addr[2];
+            if (!bcu->addrTables->readAddrTable(1 + (addressIndex << 1), addr, sizeof(addr)))
+            {
+                return 0;
+            }
+            return ((addr[0] << 8) | addr[1]);
+        }
     }
     return (0);
 }

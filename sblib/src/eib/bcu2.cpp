@@ -21,9 +21,9 @@ void BCU2::setOwnAddress(const uint16_t addr)
     BcuDefault::setOwnAddress(addr);
     if (userEeprom->loadState(OT_ADDR_TABLE) == LS_LOADING)
     {
-        uint8_t* addrTab = addrTables->addrTable() + 1;
-        *(addrTab + 0) = HIGH_BYTE(ownAddress());
-        *(addrTab + 1) = lowByte(ownAddress());
+        // the own address is the first entry of the address table, behind the number of entries
+        const uint8_t address[] = {HIGH_BYTE(ownAddress()), lowByte(ownAddress())};
+        (void) static_cast<AddrTablesBCU2*>(addrTables)->writeAddrTable(1, address, sizeof(address));
         userEeprom->modified(true);
     }
 }
@@ -37,8 +37,11 @@ inline void BCU2::begin(const int manufacturer, const int deviceType, const int 
 
     if (userEeprom->loadState(OT_ADDR_TABLE) == LS_LOADING)
     {
-        const uint8_t* addrTab = addrTables->addrTable() + 1;
-        setOwnAddress(makeWord(*(addrTab), *(addrTab + 1)));
+        uint8_t address[2];
+        if (addrTables->readAddrTable(1, address, sizeof(address)))
+        {
+            setOwnAddress(makeWord(address[0], address[1]));
+        }
     }
 
     commObjectTableAddressStatic = readOnlyCommObjectTableAddress;

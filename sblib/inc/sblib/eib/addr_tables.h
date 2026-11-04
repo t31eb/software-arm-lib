@@ -69,6 +69,16 @@ public:
     [[nodiscard]] virtual bool readAssocTable(uint32_t offset, uint8_t* buffer, uint32_t length) = 0;
 
     /**
+     * Read a part of the address table, without a pointer into the memory.
+     *
+     * @param offset Offset of the first byte to read, 0 is the number of entries.
+     * @param buffer Buffer of at least @p length bytes, provided by the caller.
+     * @param length Number of bytes to read.
+     * @return true if the bytes were read, false if there is no table or the bytes are outside of the user memory.
+     */
+    [[nodiscard]] virtual bool readAddrTable(uint32_t offset, uint8_t* buffer, uint32_t length) = 0;
+
+    /**
      * Get total number of address entries
      * @return Total number of address entries including own address
      */

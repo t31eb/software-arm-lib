@@ -56,15 +56,15 @@ public:
 
     [[nodiscard]] bool readAssocTable(uint32_t offset, uint8_t* buffer, uint32_t length) override;
 
+    [[nodiscard]] bool readAddrTable(uint32_t offset, uint8_t* buffer, uint32_t length) override;
+
     /**
-     * Read a part of the address table, without a pointer into the memory.
+     * Write a part of the address table, without a pointer into the memory.
+     * Marks the user EEPROM as modified if the table is there.
      *
-     * @param offset Offset of the first byte to read, 0 is the number of entries.
-     * @param buffer Buffer of at least @p length bytes, provided by the caller.
-     * @param length Number of bytes to read.
-     * @return true if the bytes were read, false if there is no table or the bytes are outside of the user memory.
+     * @return true if the bytes were written, false if there is no table or the bytes are outside of the user memory.
      */
-    [[nodiscard]] bool readAddrTable(uint32_t offset, uint8_t* buffer, uint32_t length);
+    bool writeAddrTable(uint32_t offset, const uint8_t* buffer, uint32_t length);
 
 private:
     BCU2* bcu;
