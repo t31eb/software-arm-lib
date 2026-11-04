@@ -135,6 +135,27 @@ uint16_t& UserEeprom::directAccess_16(const uint32_t index) const
     return reinterpret_cast<uint16_t&>(directAccess_8(index));
 }
 
+uint8_t UserEeprom::field8(const uint32_t offset) const
+{
+    return directAccess_8(offset);
+}
+
+void UserEeprom::setField8(const uint32_t offset, const uint8_t value)
+{
+    directAccess_8(offset) = value;
+}
+
+uint16_t UserEeprom::field16(const uint32_t offset) const
+{
+    return makeWord(field8(offset + 1), field8(offset));
+}
+
+void UserEeprom::setField16(const uint32_t offset, const uint16_t value)
+{
+    setField8(offset, lowByte(value));
+    setField8(offset + 1, HIGH_BYTE(value));
+}
+
 uint8_t& UserEeprom::operator[](uint32_t address) const
 {
     normalizeAddress(&address);

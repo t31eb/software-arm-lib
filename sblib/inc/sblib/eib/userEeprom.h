@@ -175,6 +175,31 @@ protected:
      */
     [[nodiscard]] uint16_t& directAccess_16(uint32_t index) const;
 
+    /**
+     * @brief Value of a byte of the user EEPROM, by offset from its start (no @ref startAddress involved).
+     * @details Used by the named getters of the system fields. Pointer free replacement of @ref directAccess_8.
+     */
+    [[nodiscard]] uint8_t field8(uint32_t offset) const;
+
+    /**
+     * @brief Set a byte of the user EEPROM, by offset from its start.
+     * @details Does not mark the memory as modified, like an assignment through the former references.
+     *          Call @ref modified() to persist the change.
+     */
+    void setField8(uint32_t offset, uint8_t value);
+
+    /**
+     * @brief Value of a 16 bit field of the user EEPROM, low byte first, by offset from its start.
+     * @details Read byte by byte, so @p offset may be odd.
+     */
+    [[nodiscard]] uint16_t field16(uint32_t offset) const;
+
+    /**
+     * @brief Set a 16 bit field of the user EEPROM, low byte first, by offset from its start.
+     * @details Written byte by byte, so @p offset may be odd. Does not mark the memory as modified.
+     */
+    void setField16(uint32_t offset, uint16_t value);
+
     bool userEepromModified = false;
     uint32_t writeUserEepromTime = 0;
 

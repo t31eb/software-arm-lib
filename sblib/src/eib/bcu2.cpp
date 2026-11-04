@@ -44,7 +44,7 @@ inline void BCU2::begin(const int manufacturer, const int deviceType, const int 
     commObjectTableAddressStatic = readOnlyCommObjectTableAddress;
     if ((commObjectTableAddressStatic != 0) && (userEeprom->commsTabAddr() != commObjectTableAddressStatic))
     {
-        userEeprom->commsTabAddr() = commObjectTableAddressStatic;
+        userEeprom->setCommsTabAddr(commObjectTableAddressStatic);
         userEeprom->modified(true);
     }
 

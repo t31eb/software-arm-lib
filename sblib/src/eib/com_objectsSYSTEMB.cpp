@@ -99,8 +99,7 @@ void ComObjectsSYSTEMB::processGroupTelegram(const uint16_t addr, const int apci
 
 uint8_t* ComObjectsSYSTEMB::objectConfigTable()
 {
-    const uint8_t* addr = (uint8_t*) &((SYSTEMB*)bcu)->userEeprom->commsTabAddr();
-    return ((BcuDefault*)bcu)->userMemoryPtr(makeWord(*(addr + 1), *addr));
+    return ((BcuDefault*)bcu)->userMemoryPtr(((SYSTEMB*)bcu)->userEeprom->commsTabAddr());
 }
 
 uint8_t* ComObjectsSYSTEMB::objectFlagsTable()

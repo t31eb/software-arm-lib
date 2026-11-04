@@ -127,12 +127,12 @@ LoadState PropertiesBCU2::handleAllocAbsTaskSegment(const int objectIdx, const u
     switch (objectIdx)
     {
         case OT_ADDR_TABLE:
-            bcu->userEeprom->addrTabAddr() = addr;
+            bcu->userEeprom->setAddrTabAddr(addr);
             DB_PROPERTIES(serial.println("  ----> userEeprom->addrTabAddr=0x", bcu->userEeprom->addrTabAddr(), HEX, 4); serial.println(););
             break;
 
         case OT_ASSOC_TABLE:
-            bcu->userEeprom->assocTabAddr() = addr;
+            bcu->userEeprom->setAssocTabAddr(addr);
             DB_PROPERTIES(serial.println("  ----> userEeprom->assocTabAddr=0x", bcu->userEeprom->assocTabAddr(), HEX, 4); serial.println(););
             break;
 
@@ -306,7 +306,7 @@ LoadState PropertiesBCU2::handleTaskCtrl1([[maybe_unused]] const int objectIdx, 
     // payLoad[0..1] : interface object address
     // payLoad[2]    : nr. of interface objects
     // payLoad[3..7] : reserved
-    bcu->userEeprom->eibObjAddr() = makeWord(payLoad[0], payLoad[1]);
+    bcu->userEeprom->setEibObjAddr(makeWord(payLoad[0], payLoad[1]));
     bcu->userEeprom->eibObjCount() = payLoad[2];
     DB_PROPERTIES(
         serial.print("handleTaskCtrl1 ONLY PARTLY IMPLEMENTED! ");
@@ -338,9 +338,9 @@ LoadState PropertiesBCU2::handleTaskCtrl2([[maybe_unused]] const int objectIdx, 
     }
 
     // XXX is it ok to set .commsTabAddr, .commsSeg0Addr & .commsSeg1Addr without checking objectIdx???
-    bcu->userEeprom->commsTabAddr() = newAddress;
-    bcu->userEeprom->commsSeg0Addr() = makeWord(payLoad[4], payLoad[5]); // commsSeg0Addr is nowhere used in sblib
-    bcu->userEeprom->commsSeg1Addr() = makeWord(payLoad[6], payLoad[7]); // commsSeg1Addr is nowhere used in sblib
+    bcu->userEeprom->setCommsTabAddr(newAddress);
+    bcu->userEeprom->setCommsSeg0Addr(makeWord(payLoad[4], payLoad[5])); // commsSeg0Addr is nowhere used in sblib
+    bcu->userEeprom->setCommsSeg1Addr(makeWord(payLoad[6], payLoad[7])); // commsSeg1Addr is nowhere used in sblib
 
     DB_PROPERTIES(
         serial.print("handleTaskCtrl2 ONLY PARTLY IMPLEMENTED! ");

@@ -217,7 +217,7 @@ TEST_CASE("MASK0701 load control and load state addresses", "[poc][memory]")
         REQUIRE(f.memoryRead(LOAD_STATE_ADDRESS + INTERFACE_OBJECT_COUNT, 1).count == 0);
 
         // length is not limited, so this reads behind the load states into the table pointers
-        f.bcu->userEeprom->addrTabAddr() = 0x4000;
+        f.bcu->userEeprom->setAddrTabAddr(0x4000);
         const auto result = f.memoryRead(LOAD_STATE_ADDRESS + 7, 3);
         REQUIRE(result.count == 3);
         REQUIRE(result.data == Data {0x17, 0x00, 0x40});

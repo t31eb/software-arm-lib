@@ -154,9 +154,9 @@ LoadState PropertiesSYSTEMB::handleDataRelativeAllocation(const int objectIdx, c
     );
 
     const unsigned int reqMemSize = ((payLoad[0] << 24) | (payLoad[1] << 16) | (payLoad[2] << 8) | payLoad[3]);
-    uint16_t* tableAddress[] = {
-        &bcu->userEeprom->addrTabAddr(), &bcu->userEeprom->assocTabAddr(), &bcu->userEeprom->commsTabAddr(),
-        &bcu->userEeprom->eibObjAddr(), &bcu->userEeprom->commsSeg0Addr()
+    const uint16_t tableAddress[] = {
+        bcu->userEeprom->addrTabAddr(), bcu->userEeprom->assocTabAddr(), bcu->userEeprom->commsTabAddr(),
+        bcu->userEeprom->eibObjAddr(), bcu->userEeprom->commsSeg0Addr()
     };
 
     const UserEepromSYSTEMB* userEeprom = (UserEepromSYSTEMB*)bcu->userEeprom;
@@ -169,10 +169,19 @@ LoadState PropertiesSYSTEMB::handleDataRelativeAllocation(const int objectIdx, c
     uint16_t virtMemAddr = 0x3A9E; ///\todo get rid of magic number USER_EEPROM_START + USER_EEPROM_SIZE
     for (int i = 0; i < 5; i++)
     {
-        if ((*tableAddress[i] != 0) && (*tableAddress[i] < virtMemAddr))
-            virtMemAddr = *tableAddress[i];
+        if ((tableAddress[i] != 0) && (tableAddress[i] < virtMemAddr))
+            virtMemAddr = tableAddress[i];
     }
-    *tableAddress[objectIdx - 1] = virtMemAddr - reqMemSize;
+    const uint16_t newTableAddress = virtMemAddr - reqMemSize;
+    switch (objectIdx)
+    {
+        case 1: bcu->userEeprom->setAddrTabAddr(newTableAddress); break;
+        case 2: bcu->userEeprom->setAssocTabAddr(newTableAddress); break;
+        case 3: bcu->userEeprom->setCommsTabAddr(newTableAddress); break;
+        case 4: bcu->userEeprom->setEibObjAddr(newTableAddress); break;
+        case 5: bcu->userEeprom->setCommsSeg0Addr(newTableAddress); break;
+        default: break; // before, an index outside 1..5 wrote behind the array
+    }
     uint8_t* tabSiz = tableSize[objectIdx - 1];
     tabSiz[0] = payLoad[0];
     tabSiz[1] = payLoad[1];

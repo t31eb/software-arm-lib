@@ -67,9 +67,6 @@ public:
     [[nodiscard]] bool readAddrTable(uint32_t offset, uint8_t* buffer, uint32_t length);
 
 private:
-    /** @return The virtual address stored in a table pointer of the user EEPROM, low byte first. */
-    static uint16_t tableAddress(const uint16_t& tablePointer);
-
     BCU2* bcu;
 };
 

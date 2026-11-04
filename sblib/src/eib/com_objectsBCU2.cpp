@@ -25,8 +25,7 @@ uint8_t* ComObjectsBCU2::objectValuePtr(const int objno)
 
 uint8_t* ComObjectsBCU2::objectConfigTable()
 {
-    const uint8_t* addr = (uint8_t*) &((BCU2*)bcu)->userEeprom->commsTabAddr();
-    const uint16_t comObjTableAddr = makeWord(*(addr + 1), *addr);
+    const uint16_t comObjTableAddr = ((BCU2*)bcu)->userEeprom->commsTabAddr();
     return ((BcuDefault*)bcu)->userMemoryPtr(comObjTableAddr);
 }
 
@@ -65,8 +64,7 @@ const ComConfig& ComObjectsBCU2::objectConfig(const int objno)
 void ComObjectsBCU2::printObjectConfigTable()
 {
 #ifdef DUMP_COM_OBJ
-        uint8_t * addr = (uint8_t*) & ((BCU2*)bcu)->userEeprom->commsTabAddr();
-        uint16_t comObjTableAddr = makeWord(*(addr + 1), * addr);
+        uint16_t comObjTableAddr = ((BCU2*)bcu)->userEeprom->commsTabAddr();
         serial.println("ObjectConfigTable:");
         serial.println("   address      : 0x", comObjTableAddr, HEX, 4);
         if (comObjTableAddr == 0)

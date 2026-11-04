@@ -12,8 +12,10 @@ public:
     ///\todo check start of 0x3300, SYSTEM B has typically dynamic memory allocation
     explicit UserEepromSYSTEMB() : UserEepromSYSTEMB(0x3300, 3072, 4096) {}
 
-    [[nodiscard]] uint16_t& addrTabAddr() const override { return directAccess_16(addrTabAddrOffset); }
-    [[nodiscard]] uint16_t& assocTabAddr() const override { return directAccess_16(assocTabAddrOffset); }
+    [[nodiscard]] uint16_t addrTabAddr() const override { return field16(addrTabAddrOffset); }
+    void setAddrTabAddr(const uint16_t value) override { setField16(addrTabAddrOffset, value); }
+    [[nodiscard]] uint16_t assocTabAddr() const override { return field16(assocTabAddrOffset); }
+    void setAssocTabAddr(const uint16_t value) override { setField16(assocTabAddrOffset, value); }
     [[nodiscard]] virtual uint8_t* addrTabMcb() const { return &directAccess_8(addrTabMcbOffset); }
     [[nodiscard]] virtual uint8_t* assocTabMcb() const { return &directAccess_8(assocTabMcbOffset); }
     [[nodiscard]] virtual uint8_t* commsTabMcb() const { return &directAccess_8(commsTabMcbOffset); }

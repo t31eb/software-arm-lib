@@ -32,13 +32,19 @@ public:
 
     [[nodiscard]] virtual uint8_t& appType() const { return directAccess_8(appTypeOffset); }
     [[nodiscard]] virtual uint8_t* loadState() const { return &directAccess_8(loadStateOffset); }
-    [[nodiscard]] virtual uint16_t& commsTabAddr() const { return directAccess_16(commsTabAddrOffset); }
-    [[nodiscard]] virtual uint16_t& commsSeg0Addr() const { return directAccess_16(commsSeg0AddrOffset); }
-    [[nodiscard]] virtual uint16_t& commsSeg1Addr() const { return directAccess_16(commsSeg1AddrOffset); }
-    [[nodiscard]] virtual uint16_t& eibObjAddr() const { return directAccess_16(eibObjAddrOffset); }
+    [[nodiscard]] virtual uint16_t commsTabAddr() const { return field16(commsTabAddrOffset); }
+    virtual void setCommsTabAddr(const uint16_t value) { setField16(commsTabAddrOffset, value); }
+    [[nodiscard]] virtual uint16_t commsSeg0Addr() const { return field16(commsSeg0AddrOffset); }
+    virtual void setCommsSeg0Addr(const uint16_t value) { setField16(commsSeg0AddrOffset, value); }
+    [[nodiscard]] virtual uint16_t commsSeg1Addr() const { return field16(commsSeg1AddrOffset); }
+    virtual void setCommsSeg1Addr(const uint16_t value) { setField16(commsSeg1AddrOffset, value); }
+    [[nodiscard]] virtual uint16_t eibObjAddr() const { return field16(eibObjAddrOffset); }
+    virtual void setEibObjAddr(const uint16_t value) { setField16(eibObjAddrOffset, value); }
     [[nodiscard]] virtual uint8_t& eibObjCount() const { return directAccess_8(eibObjCountOffset); }
-    [[nodiscard]] virtual uint16_t& addrTabAddr() const { return directAccess_16(addrTabAddrOffset); }
-    [[nodiscard]] virtual uint16_t& assocTabAddr() const { return directAccess_16(assocTabAddrOffset); }
+    [[nodiscard]] virtual uint16_t addrTabAddr() const { return field16(addrTabAddrOffset); }
+    virtual void setAddrTabAddr(const uint16_t value) { setField16(addrTabAddrOffset, value); }
+    [[nodiscard]] virtual uint16_t assocTabAddr() const { return field16(assocTabAddrOffset); }
+    virtual void setAssocTabAddr(const uint16_t value) { setField16(assocTabAddrOffset, value); }
     [[nodiscard]] virtual uint8_t* serial() const { return &directAccess_8(serialOffset); }
     [[nodiscard]] virtual uint8_t* order() const { return &directAccess_8(orderOffset); }
 

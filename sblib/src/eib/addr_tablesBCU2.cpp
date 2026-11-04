@@ -42,28 +42,22 @@ int AddrTablesBCU2::indexOfAddr(const int addr)
     return -1;
 }
 
-uint16_t AddrTablesBCU2::tableAddress(const uint16_t& tablePointer)
-{
-    const uint8_t* addr = (const uint8_t*) &tablePointer;
-    return makeWord(*(addr + 1), *addr);
-}
-
 uint8_t* AddrTablesBCU2::addrTable()
 {
-    return bcu->userMemoryPtr(tableAddress(bcu->userEeprom->addrTabAddr()));
+    return bcu->userMemoryPtr(bcu->userEeprom->addrTabAddr());
 }
 
 uint8_t* AddrTablesBCU2::assocTable()
 {
-    return bcu->userMemoryPtr(tableAddress(bcu->userEeprom->assocTabAddr()));
+    return bcu->userMemoryPtr(bcu->userEeprom->assocTabAddr());
 }
 
 bool AddrTablesBCU2::readAddrTable(const uint32_t offset, uint8_t* buffer, const uint32_t length)
 {
-    return bcu->readUserMemory(tableAddress(bcu->userEeprom->addrTabAddr()) + offset, buffer, length);
+    return bcu->readUserMemory(bcu->userEeprom->addrTabAddr() + offset, buffer, length);
 }
 
 bool AddrTablesBCU2::readAssocTable(const uint32_t offset, uint8_t* buffer, const uint32_t length)
 {
-    return bcu->readUserMemory(tableAddress(bcu->userEeprom->assocTabAddr()) + offset, buffer, length);
+    return bcu->readUserMemory(bcu->userEeprom->assocTabAddr() + offset, buffer, length);
 }

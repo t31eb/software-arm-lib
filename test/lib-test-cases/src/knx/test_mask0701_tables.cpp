@@ -131,7 +131,7 @@ TEST_CASE("SYSTEMB address table has a big endian word as length", "[poc][tables
 
     constexpr uint16_t ADDR_TABLE_ADDRESS = 0x3400;
     uint8_t* table = &bcu.userEeprom->userEepromData[ADDR_TABLE_ADDRESS - bcu.userEeprom->startAddr()];
-    bcu.userEeprom->addrTabAddr() = ADDR_TABLE_ADDRESS;
+    bcu.userEeprom->setAddrTabAddr(ADDR_TABLE_ADDRESS);
     table[0] = 0x01;
     table[1] = 0x02;
     REQUIRE(bcu.addrTables->addrCount() == 0x0102);
