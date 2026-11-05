@@ -22,6 +22,13 @@ constexpr uint32_t entryOffset(const int objno)
 
 uint8_t* ComObjectsBCU2::objectValuePtr(const int objno)
 {
+    uint8_t type;
+    uint16_t valueAddress;
+    if (objectLayout != nullptr && objectLayout->object(objno, type, valueAddress))
+    {
+        return ((BcuDefault*)bcu)->userMemoryPtr(valueAddress);
+    }
+
     // TODO Should handle userRam.segment0addr and userRam.segment1addr here
     // if (cfg.config & COMCONF_VALUE_TYPE) // 0 if segment 0, !=0 if segment 1
     uint8_t addr[sizeof(ComConfigBCU2::DataPtrType)];
@@ -53,6 +60,11 @@ bool ComObjectsBCU2::readObjectConfigTable(const uint32_t offset, uint8_t* buffe
 
 uint8_t* ComObjectsBCU2::objectFlagsTable()
 {
+    if (objectLayout != nullptr && objectLayout->flagsTableAddress() != 0)
+    {
+        return ((BcuDefault*)bcu)->userMemoryPtr(objectLayout->flagsTableAddress());
+    }
+
     uint8_t configTable[3];
     if (!readObjectConfigTable(0, configTable, sizeof(configTable)))
     {
@@ -79,6 +91,12 @@ ComConfig ComObjectsBCU2::objectConfig(const int objno)
     {
         config.config = bytes[0];
         config.type = bytes[1];
+    }
+    uint8_t type;
+    uint16_t valueAddress;
+    if (objectLayout != nullptr && objectLayout->object(objno, type, valueAddress))
+    {
+        config.type = type; // the flags (config) stay as ETS configured them
     }
     return config; // before, a missing table dereferenced a null pointer
 }

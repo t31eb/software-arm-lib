@@ -42,6 +42,33 @@ class BcuBase;
 
 #define INVALID_OBJECT_NUMBER -1
 
+/**
+ * Layout of the communication objects in RAM, provided by the application.
+ *
+ * Some applications decide at runtime which type a communication object has and where its value lies in the user
+ * RAM (e.g. the MultiSensorAktor, depending on the channel configuration). Instead of writing type and data pointer
+ * into the com object table, which lies in non-volatile memory, they register a layout; the table stays as ETS wrote
+ * it. Only the BCU2 com objects (and the masks derived from them) ask the layout.
+ */
+class ComObjectLayout
+{
+public:
+    virtual ~ComObjectLayout() = default;
+
+    /**
+     * Type and value address of a communication object.
+     *
+     * @param objno        The communication object.
+     * @param type         Set to the type (@ref ComType) if the layout knows the object.
+     * @param valueAddress Set to the virtual address of the value in the user RAM.
+     * @return true if the layout knows the object, false to use the com object table.
+     */
+    virtual bool object(int objno, uint8_t& type, uint16_t& valueAddress) = 0;
+
+    /** @return Virtual address of the RAM flags table, or 0 to use the com object table. */
+    virtual uint16_t flagsTableAddress() = 0;
+};
+
 class ComObjects
 {
 public:
@@ -50,6 +77,13 @@ public:
     virtual ~ComObjects() = default;
 
     void objectEndian(int val);
+
+    /**
+     * Register the application's layout of the communication objects in RAM, see @ref ComObjectLayout.
+     *
+     * @param layout The layout, or nullptr to use the com object table only. Must live as long as the BCU.
+     */
+    void setObjectLayout(ComObjectLayout* layout) { objectLayout = layout; }
 
     /**
      * Get the numeric value from a communication object. Can be used for
@@ -363,6 +397,7 @@ protected:
 
     BcuBase* bcu;
     int le_ptr;
+    ComObjectLayout* objectLayout = nullptr; //!< see setObjectLayout()
     int transmitting_object_no; //!< Object number of last transmitted bus message - status should be in transmitting
     int sendNextObjIndex;       //!< Next object number which  will be checked in sendNextGroupTelegram() for transmission
     int nextUpdatedObjIndex;    //!< Next object number which  will be checked in nextUpdatedObject() for processing by the application
