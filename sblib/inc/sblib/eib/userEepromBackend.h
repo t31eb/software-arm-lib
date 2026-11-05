@@ -80,7 +80,11 @@ public:
     /** Makes all changes persistent. */
     virtual void flush() = 0;
 
-    /** Reads the persistent content again, changes that weren't flushed are lost. */
+    /**
+     * Reads the persistent content again, changes that weren't written yet are lost.
+     * @note A backend with a cache may have written some changes before @ref flush already
+     *       (@ref UserEepromFlash on a change of the page), they stay.
+     */
     virtual void reload() = 0;
 
     /**
