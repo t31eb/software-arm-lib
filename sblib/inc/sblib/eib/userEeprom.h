@@ -9,6 +9,7 @@
 #define SBLIB_KNX_USEREEPROM_H_
 
 #include <sblib/eib/memory.h>
+#include <sblib/eib/userEepromBackend.h>
 #include <sblib/platform.h>
 
 
@@ -26,6 +27,9 @@
  *      - BCU 1 0x119 - 0x1fe (only the range of the UserEEPROM, not the whole EEPROM)
  *      - BCU 2 0x119 - 0x46f (only the range of the UserEEPROM, not the whole EEPROM)
  *      - BIM M112 0x4000 - 0xcfff
+ * @note The bytes are kept by a @ref UserEepromBackend. By default this is a mirror of the whole user EEPROM in RAM
+ *       (@ref UserEepromMirror); the pointer interfaces (@ref operator[], @ref userEepromData, @ref addrTab) only
+ *       work with it.
  */
 class UserEeprom : public Memory
 {
@@ -37,11 +41,25 @@ public:
     UserEeprom& operator=(const UserEeprom&) = delete;
     UserEeprom& operator=(UserEeprom&&) = delete;
 
+    /** User EEPROM with a RAM mirror (@ref UserEepromMirror), persisted in pages of @p flashSize bytes. */
     explicit UserEeprom(uint32_t start, uint32_t size, uint32_t flashSize);
+
+    /**
+     * User EEPROM with the given backend.
+     *
+     * @param backend Keeps the bytes, its @ref UserEepromBackend::size must be @p size. It has to live as long as the
+     *                user EEPROM and isn't deleted with it, like the former RAM mirror (a destructor would cost
+     *                about 750 bytes of flash in the MSA for the vtables of the derived classes).
+     */
+    UserEeprom(uint32_t start, uint32_t size, UserEepromBackend* backend);
 
     ///\todo Enable deprecation warning after making userEepromData private
     //[[deprecated("Use getUInt8, getUInt16, getUInt32 or the [] operator.")]]
-    alignas(FLASH_RAM_BUFFER_ALIGNMENT) uint8_t* userEepromData; // must be word aligned, otherwise iapProgram will fail
+    /** The RAM mirror of the backend, @c nullptr if it has none. */
+    uint8_t* const userEepromData;
+
+    /** @return The backend that keeps the bytes. */
+    [[nodiscard]] UserEepromBackend* backend() const { return storage; }
 
     [[nodiscard]] virtual uint8_t optionReg() const = 0;
     virtual void setOptionReg(uint8_t value) = 0;
@@ -99,6 +117,7 @@ public:
      *
      * @param address  The address of the data byte to access.
      * @return The data byte.
+     * @warning Needs a backend with a RAM mirror, calls @ref fatalError() otherwise.
      */
     uint8_t& operator[](uint32_t address) const override;
 
@@ -137,29 +156,16 @@ public:
 
     [[nodiscard]] bool writeDelayElapsed() const;
 
-    [[nodiscard]] uint32_t flashSize() const;
-
-    [[nodiscard]] uint32_t numEepromPages() const;
-    [[nodiscard]] uint8_t* lastEepromPage() const;
-    [[nodiscard]] uint8_t* flashSectorAddress() const;
-
     /**
      * If user-eeprom is modified, changes are written to the mcu's flash
      * @warn While the eeprom is written, all interrupts are disabled.
      */
     void writeUserEeprom();
+
+    /** Reads the user EEPROM from the backend's persistent copy again, unsaved changes are lost. */
     void readUserEeprom();
 
 protected:
-    /**
-     * Finds the last valid page in the flash sector.
-     *
-     * @details The search is done backwards from the end of the mcu flash in  @ref FLASH_SECTOR_SIZE steps.
-     *
-     * @return If successful: number of the last valid flash page, otherwise 0
-     */
-    [[nodiscard]] uint8_t* findValidPage() const;
-
     /**
      * @brief Access the internal @ref userEepromData array directly by raw index, without
      *        any @ref startAddress offset subtraction.
@@ -168,7 +174,8 @@ protected:
      *               <tt>startAddress + index</tt> within the valid array range,
      *               otherwise @ref fatalError() is called.
      * @return Reference to the byte at @ref userEepromData[index].
-     * @warning This method is intended for internal use only.
+     * @warning This method is intended for internal use only. Needs a backend with a RAM mirror, calls
+     *          @ref fatalError() otherwise.
      */
     [[nodiscard]] uint8_t& directAccess_8(uint32_t index) const;
 
@@ -177,14 +184,14 @@ protected:
      * @details Used by the named getters of the system fields. Replaces the former references of directAccess_8/_16.
      *          Without a range check: @p offset is a constant of the derived class and always inside.
      */
-    [[nodiscard]] uint8_t field8(const uint32_t offset) const { return userEepromData[offset]; }
+    [[nodiscard]] uint8_t field8(uint32_t offset) const;
 
     /**
      * @brief Set a byte of the user EEPROM, by offset from its start.
      * @details Does not mark the memory as modified, like an assignment through the former references.
      *          Call @ref modified() to persist the change.
      */
-    void setField8(const uint32_t offset, const uint8_t value) { userEepromData[offset] = value; }
+    void setField8(uint32_t offset, uint8_t value);
 
     /**
      * @brief Value of a 16 bit field of the user EEPROM, low byte first, by offset from its start.
@@ -210,7 +217,8 @@ protected:
     bool userEepromModified = false;
     uint32_t writeUserEepromTime = 0;
 
-    const uint32_t userEepromFlashSize;
+private:
+    UserEepromBackend* const storage; //!< keeps the bytes
 };
 
 

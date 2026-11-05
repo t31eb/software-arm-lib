@@ -6,58 +6,15 @@
  */
 
 #include <sblib/eib/userEeprom.h>
-#include <sblib/internal/iap.h>
-#include <sblib/interrupt.h>
+#include <sblib/eib/userEepromMirror.h>
 #include <sblib/timer.h>
 #include <sblib/bits.h>
-#include <cstring>
+#include <sblib/utils.h>
 
-
-uint32_t UserEeprom::flashSize() const
-{
-    return userEepromFlashSize;
-}
-
-uint32_t UserEeprom::numEepromPages() const
-{
-    return FLASH_SECTOR_SIZE / flashSize();
-}
-
-uint8_t* UserEeprom::lastEepromPage() const
-{
-    return flashSectorAddress() + flashSize() * (numEepromPages() - 1);
-}
-
-uint8_t* UserEeprom::flashSectorAddress() const
-{
-    return (FLASH_BASE_ADDRESS + iapFlashSize() - FLASH_SECTOR_SIZE);
-}
-
-uint8_t* UserEeprom::findValidPage() const
-{
-    const uint8_t* firstPage = FLASH_BASE_ADDRESS + iapFlashSize() - FLASH_SECTOR_SIZE;
-    uint8_t* page = lastEepromPage();
-
-    while (page >= firstPage)
-    {
-        if (page[size() - 1] != 0xff) ///\todo check more then  only one byte for 0xff (empty flash)
-            return page;
-
-        page -= userEepromFlashSize;
-    }
-
-    return nullptr; // no valid page found
-}
 
 void UserEeprom::readUserEeprom()
 {
-    uint8_t* page = findValidPage();
-
-    if (page)
-        memcpy(userEepromData, page, size());
-    else
-        memset(userEepromData, 0, size()); ///\todo should filling with zeros indicate a readError? if yes, then it should be somewhere reported
-
+    storage->reload();
     modified(false);
 }
 
@@ -68,66 +25,42 @@ void UserEeprom::writeUserEeprom()
         return;
     }
 
-    noInterrupts();
-
-    uint8_t* page = findValidPage();
-    if (page == lastEepromPage())
-    {
-        page = flashSectorAddress();
-    }
-    else if (page)
-        page += userEepromFlashSize;
-    else
-    {
-        page = flashSectorAddress();
-    }
-
-    if (page == flashSectorAddress())
-    {
-        // Erase the sector
-        const int sectorId = iapSectorOfAddress(page);
-        const IAP_Status rc = iapEraseSector(sectorId);
-        if (rc != IAP_SUCCESS)
-        {
-            fatalError(); // erasing failed
-        }
-    }
-
-    userEepromData[size() - 1] = 0; // mark the page as in use
-
-    for (uint32_t i = 0; i < size(); i += 1024)
-    {
-        int chunk = size() - i;
-        if (chunk > 1024)
-        {
-            chunk = 1024;
-        }
-        IAP_Status rc = iapProgram(page + i, userEepromData + i, chunk);
-        if (rc != IAP_SUCCESS)
-        {
-            fatalError(); // flashing failed
-        }
-    }
-
+    storage->flush();
     modified(false);
-    interrupts();
 }
 
 UserEeprom::UserEeprom(const uint32_t start, const uint32_t size, const uint32_t flashSize) :
-    Memory(start, size),
-    userEepromData(new uint8_t[size]()),
-    userEepromFlashSize(flashSize)
+    UserEeprom(start, size, new UserEepromMirror(size, flashSize))
 {
-    readUserEeprom();
+}
+
+UserEeprom::UserEeprom(const uint32_t start, const uint32_t size, UserEepromBackend* backend) :
+    Memory(start, size),
+    userEepromData(backend->mirror()),
+    storage(backend)
+{
+    modified(false);
 }
 
 uint8_t& UserEeprom::directAccess_8(const uint32_t index) const
 {
-    if (!inRange(startAddr() + index))
+    if (!inRange(startAddr() + index) || (userEepromData == nullptr))
     {
         fatalError();
     }
     return this->userEepromData[index];
+}
+
+uint8_t UserEeprom::field8(const uint32_t offset) const
+{
+    uint8_t value;
+    storage->read(offset, &value, 1);
+    return value;
+}
+
+void UserEeprom::setField8(const uint32_t offset, const uint8_t value)
+{
+    storage->write(offset, &value, 1);
 }
 
 uint16_t UserEeprom::field16(const uint32_t offset) const
@@ -143,16 +76,20 @@ void UserEeprom::setField16(const uint32_t offset, const uint16_t value)
 
 void UserEeprom::readField(const uint32_t offset, uint8_t* buffer, const uint32_t length) const
 {
-    memcpy(buffer, userEepromData + offset, length);
+    storage->read(offset, buffer, length);
 }
 
 void UserEeprom::writeField(const uint32_t offset, const uint8_t* buffer, const uint32_t length)
 {
-    memcpy(userEepromData + offset, buffer, length);
+    storage->write(offset, buffer, length);
 }
 
 uint8_t& UserEeprom::operator[](uint32_t address) const
 {
+    if (userEepromData == nullptr)
+    {
+        fatalError();
+    }
     normalizeAddress(&address);
     return userEepromData[address];
 }
@@ -171,7 +108,7 @@ uint8_t UserEeprom::getUInt8(uint32_t address) const
     {
         return 0;
     }
-    return userEepromData[address];
+    return field8(address);
 }
 
 uint16_t UserEeprom::getUInt16(uint32_t address) const
@@ -181,7 +118,7 @@ uint16_t UserEeprom::getUInt16(uint32_t address) const
     {
         return 0;
     }
-    return makeWord(userEepromData[address], userEepromData[address + 1]);
+    return makeWord(field8(address), field8(address + 1));
 }
 
 bool UserEeprom::readBlock(uint32_t virtAddress, uint8_t* buffer, const uint32_t length) const
@@ -195,7 +132,7 @@ bool UserEeprom::readBlock(uint32_t virtAddress, uint8_t* buffer, const uint32_t
         return false;
     }
     normalizeAddress(&virtAddress);
-    memcpy(buffer, userEepromData + virtAddress, length);
+    storage->read(virtAddress, buffer, length);
     return true;
 }
 
@@ -210,7 +147,7 @@ bool UserEeprom::writeBlock(uint32_t virtAddress, const uint8_t* buffer, const u
         return false;
     }
     normalizeAddress(&virtAddress);
-    memcpy(userEepromData + virtAddress, buffer, length);
+    storage->write(virtAddress, buffer, length);
     modified(true);
     return true;
 }

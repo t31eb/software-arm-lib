@@ -119,6 +119,8 @@ set(SBLIB_KNX_SRC
         inc/sblib/eib/typesMASK0705.h
         inc/sblib/eib/typesSYSTEMB.h
         inc/sblib/eib/userEeprom.h
+        inc/sblib/eib/userEepromBackend.h
+        inc/sblib/eib/userEepromMirror.h
         inc/sblib/eib/userEepromBCU1.h
         inc/sblib/eib/userEepromBCU2.h
         inc/sblib/eib/userEepromMASK0701.h
@@ -166,6 +168,7 @@ set(SBLIB_KNX_SRC
         src/eib/serial_number.cpp
         src/eib/systemb.cpp
         src/eib/userEeprom.cpp
+        src/eib/userEepromMirror.cpp
         src/eib/userRam.cpp
 )
 

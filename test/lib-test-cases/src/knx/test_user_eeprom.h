@@ -10,6 +10,7 @@
 #define TEST_SBLIB_KNX_USEREEPROM_H_
 
 #include <sblib/eib/userEeprom.h>
+#include <sblib/eib/userEepromMirror.h>
 
 
 class TestUserEeprom final : public UserEeprom
@@ -18,7 +19,8 @@ public:
     TestUserEeprom() = delete;
     using UserEeprom::UserEeprom;
     //TestUserEeprom(unsigned int start, unsigned int size, unsigned int flashSize);
-    using UserEeprom::findValidPage;
+    /** The flash page search of the default backend, the RAM mirror. */
+    [[nodiscard]] uint8_t* findValidPage() const { return static_cast<UserEepromMirror*>(backend())->findValidPage(); }
 
     [[nodiscard]] uint8_t optionReg() const override { return field8(0); }
     void setOptionReg(const uint8_t value) override { setField8(0, value); }
