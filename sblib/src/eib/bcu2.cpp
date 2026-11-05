@@ -22,7 +22,7 @@ void BCU2::setOwnAddress(const uint16_t addr)
     if (userEeprom->loadState(OT_ADDR_TABLE) == LS_LOADING)
     {
         // the own address is the first entry of the address table, behind the number of entries
-        const uint8_t address[] = {HIGH_BYTE(ownAddress()), lowByte(ownAddress())};
+        const uint8_t address[] = {static_cast<uint8_t>(HIGH_BYTE(ownAddress())), static_cast<uint8_t>(lowByte(ownAddress()))};
         (void) static_cast<AddrTablesBCU2*>(addrTables)->writeAddrTable(1, address, sizeof(address));
         userEeprom->modified(true);
     }
