@@ -39,6 +39,10 @@ UserEeprom::UserEeprom(const uint32_t start, const uint32_t size, UserEepromBack
     userEepromData(backend->mirror()),
     storage(backend)
 {
+    if (backend->size() != size)
+    {
+        fatalError();
+    }
     modified(false);
 }
 

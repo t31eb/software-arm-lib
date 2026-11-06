@@ -132,6 +132,12 @@ if(SBLIB_ARCHITECTURE STREQUAL "x86")
         COMMAND ${TARGET_X86} --reporter junit --out $<TARGET_FILE_DIR:${TARGET_X86}>/${TARGET_X86}_result.xml
         WORKING_DIRECTORY $<TARGET_FILE_DIR:${TARGET_X86}>
     )
+    # The same tests with the user EEPROM of MASK0701 in the flash instead of the RAM mirror (UserEepromFlash)
+    add_test(NAME ${TARGET_X86}_flash_junit
+        COMMAND ${TARGET_X86} --reporter junit --out $<TARGET_FILE_DIR:${TARGET_X86}>/${TARGET_X86}_flash_result.xml
+        WORKING_DIRECTORY $<TARGET_FILE_DIR:${TARGET_X86}>
+    )
+    set_tests_properties(${TARGET_X86}_flash_junit PROPERTIES ENVIRONMENT SBLIB_TEST_USER_EEPROM=flash)
 
 # Check if building for 64bit architecture
 elseif(SBLIB_ARCHITECTURE STREQUAL "x64")
@@ -169,6 +175,12 @@ elseif(SBLIB_ARCHITECTURE STREQUAL "x64")
         COMMAND ${TARGET_X64} --reporter junit --out $<TARGET_FILE_DIR:${TARGET_X64}>/${TARGET_X64}_result.xml
         WORKING_DIRECTORY $<TARGET_FILE_DIR:${TARGET_X64}>
     )
+    # The same tests with the user EEPROM of MASK0701 in the flash instead of the RAM mirror (UserEepromFlash)
+    add_test(NAME ${TARGET_X64}_flash_junit
+        COMMAND ${TARGET_X64} --reporter junit --out $<TARGET_FILE_DIR:${TARGET_X64}>/${TARGET_X64}_flash_result.xml
+        WORKING_DIRECTORY $<TARGET_FILE_DIR:${TARGET_X64}>
+    )
+    set_tests_properties(${TARGET_X64}_flash_junit PROPERTIES ENVIRONMENT SBLIB_TEST_USER_EEPROM=flash)
 else()
     message(FATAL_ERROR "Unknown architecture ${SBLIB_ARCHITECTURE}. (project ${PROJECT_NAME})")
 endif()

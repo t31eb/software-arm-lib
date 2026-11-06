@@ -129,7 +129,7 @@ TEST_CASE("Memory access methods on the user EEPROM", "[poc][memory]")
     SECTION("read is possible over a const reference")
     {
         const UserEeprom& constEeprom = eeprom;
-        eeprom.userEepromData[EEPROM_ADDRESS - F::USER_EEPROM_FIRST] = 0x5A;
+        REQUIRE(eeprom.write<uint8_t>(EEPROM_ADDRESS, 0x5A, ByteOrder::littleEndian));
         REQUIRE(constEeprom.read<uint8_t>(EEPROM_ADDRESS, ByteOrder::littleEndian) == 0x5A);
     }
 

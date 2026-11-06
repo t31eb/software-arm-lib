@@ -9,9 +9,11 @@
 #include "mask0701_fixture.h"
 
 #include <sblib/eib/apci.h>
+#include <sblib/eib/userEepromFlash.h>
 #include <sblib/internal/iap.h>
 
 #include <algorithm>
+#include <cstdlib>
 #include <cstring>
 
 namespace
@@ -45,7 +47,7 @@ void Mask0701Fixture::boot()
         }
     }
 
-    bcu = new MASK0701();
+    bcu = flashBackend() ? new MASK0701(new UserEepromFlash(UserEepromMASK0701::SIZE)) : new MASK0701();
     bcuUnderTest = bcu;
     bcu->begin(MANUFACTURER, DEVICE_TYPE, VERSION);
     bcu->setMemMapper(memMapper);
@@ -231,7 +233,15 @@ void Mask0701Fixture::downloadTables()
 
 uint8_t Mask0701Fixture::mirrorByte(const uint32_t address) const
 {
-    return bcu->userEeprom->userEepromData[address - USER_EEPROM_FIRST];
+    uint8_t value = 0;
+    REQUIRE(bcu->userEeprom->readBlock(address, &value, 1));
+    return value;
+}
+
+bool Mask0701Fixture::flashBackend()
+{
+    const char* backend = std::getenv("SBLIB_TEST_USER_EEPROM");
+    return (backend != nullptr) && (std::strcmp(backend, "flash") == 0);
 }
 
 uint8_t Mask0701Fixture::flashByte(const uint32_t address)

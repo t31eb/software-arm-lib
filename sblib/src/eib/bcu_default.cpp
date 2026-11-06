@@ -24,6 +24,7 @@ BcuDefault::BcuDefault(UserRam* userRam, UserEeprom* userEeprom, ComObjects* com
     userEeprom(userEeprom),
     memMapper(nullptr),
     usrCallback(nullptr),
+    flashGuard(this),
     sendGrpTelEnabled(false),
     groupTelWaitMillis(DEFAULT_GROUP_TEL_WAIT_MILLIS),
     groupTelSent(millis())
@@ -34,6 +35,9 @@ BcuDefault::BcuDefault(UserRam* userRam, UserEeprom* userEeprom, ComObjects* com
 void BcuDefault::_begin()
 {
     BcuBase::_begin();
+
+    // Only now the bus can be paused. Pages written back in begin() before need no pause.
+    userEeprom->backend()->setFlashGuard(&flashGuard);
 
 #ifdef DUMP_PROPERTIES ///\todo move to BCU2::begin(...)
     IF_DEBUG(serial.println("Properties dump enabled."));
@@ -64,8 +68,7 @@ void BcuDefault::_begin()
     {
         IF_DEBUG(serial.print("userEeprom start: 0x", userEeprom->startAddr(), HEX, 4); serial.print(" "););
         IF_DEBUG(serial.print("end: 0x", userEeprom->endAddr(), HEX, 4); serial.print(" "););
-        IF_DEBUG(serial.print("size: 0x", userEeprom->size(), HEX, 4); serial.print(" "););
-        IF_DEBUG(serial.println("flashSize: 0x", userEeprom->flashSize(), HEX, 4););
+        IF_DEBUG(serial.println("size: 0x", userEeprom->size(), HEX, 4););
     }
     IF_DEBUG(serial.println());
 #endif
@@ -78,6 +81,9 @@ void BcuDefault::_begin()
 
 void BcuDefault::begin(const int manufacturer, const int deviceType, const int version)
 {
+    // Before the first access to the user EEPROM; the bus starts later in _begin()
+    userEeprom->backend()->begin();
+
     setOwnAddress(userEeprom->physicalAddress());
     userRam->status() = BCU_STATUS_LINK_LAYER | BCU_STATUS_TRANSPORT_LAYER | BCU_STATUS_APPLICATION_LAYER | BCU_STATUS_USER_MODE;
     userRam->deviceControl() = 0;
@@ -595,6 +601,19 @@ void BcuDefault::softSystemReset()
 {
     flushUserMemory(UsrCallbackType::reset);
     BcuBase::softSystemReset();
+}
+
+void BcuDefault::BusFlashGuard::pauseForFlash()
+{
+///\todo workaround for lib test cases running into an infinitive loop, like in flushUserMemory()
+#ifndef IAP_EMULATION
+    bcu->bus->pause();
+#endif
+}
+
+void BcuDefault::BusFlashGuard::resumeAfterFlash()
+{
+    bcu->bus->resume();
 }
 
 bool BcuDefault::flushUserMemory(const UsrCallbackType reason) const

@@ -23,7 +23,16 @@ public:
     /// We add 0x100 before it (0x3f00-0x3fff) to save e.g. load states, table addresses, ...
     ///\todo offset addresses are currently broken, see Issue #112
     ///      https://github.com/selfbus/software-arm-lib/issues/112
-    explicit UserEepromMASK0701() : UserEepromMASK0701(0x3f00, 3072, 4096) {}
+    explicit UserEepromMASK0701() : UserEepromMASK0701(0x3f00, SIZE, FLASH_SECTOR_SIZE) {}
+
+    /**
+     * User EEPROM with the given backend, e.g. @ref UserEepromFlash to save the RAM mirror.
+     *
+     * @param backend Keeps the bytes, its size must be @ref SIZE
+     */
+    explicit UserEepromMASK0701(UserEepromBackend* backend) : UserEepromBCU2(0x3f00, SIZE, backend) {}
+
+    static constexpr uint32_t SIZE = 3072; //!< size of the user EEPROM in bytes
 
 protected:
     // BIM M112 (Mask 0x0701) has a fixed start and size of the EEPROM, so make constructor protected

@@ -86,6 +86,10 @@ protected:
        :
         UserEeprom(start, size, flashSize) {}
 
+    UserEepromBCU1(const uint32_t start, const uint32_t size, UserEepromBackend* backend)
+       :
+        UserEeprom(start, size, backend) {}
+
 private:
     static constexpr uint32_t optionRegOffset = 0x00;         //!< 0x0100: EEPROM option register
     static constexpr uint32_t manuDataHOffset = 0x01;         //!< 0x0101: Manufacturing data high byte

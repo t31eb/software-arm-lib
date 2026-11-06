@@ -28,6 +28,14 @@ class MASK0701 : public BCU2
 {
 public:
     MASK0701();
+
+    /**
+     * MASK0701 with the given backend of the user EEPROM, e.g. @ref UserEepromFlash to save the RAM mirror.
+     *
+     * @param userEepromBackend Keeps the bytes of the user EEPROM, its size must be @ref UserEepromMASK0701::SIZE
+     */
+    explicit MASK0701(UserEepromBackend* userEepromBackend);
+
     MASK0701(UserRamMASK0701* userRam, UserEepromMASK0701* userEeprom, ComObjectsBCU2* comObjects, AddrTablesMASK0701* addrTables,
              PropertiesMASK0701* properties);
 

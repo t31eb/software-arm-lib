@@ -30,9 +30,12 @@ TEST_CASE("MASK0701 tables after a download", "[poc][tables]")
 
     SECTION("tables point into the mirror")
     {
-        REQUIRE(tables->addrTable() == &f.bcu->userEeprom->userEepromData[F::ADDR_TABLE - F::USER_EEPROM_FIRST]);
-        REQUIRE(tables->assocTable() == &f.bcu->userEeprom->userEepromData[F::ASSOC_TABLE - F::USER_EEPROM_FIRST]);
-        REQUIRE(com->objectConfigTable() == &f.bcu->userEeprom->userEepromData[F::COM_TABLE - F::USER_EEPROM_FIRST]);
+        if (!F::flashBackend()) // without a mirror the pointer interface calls fatalError()
+        {
+            REQUIRE(tables->addrTable() == &f.bcu->userEeprom->userEepromData[F::ADDR_TABLE - F::USER_EEPROM_FIRST]);
+            REQUIRE(tables->assocTable() == &f.bcu->userEeprom->userEepromData[F::ASSOC_TABLE - F::USER_EEPROM_FIRST]);
+            REQUIRE(com->objectConfigTable() == &f.bcu->userEeprom->userEepromData[F::COM_TABLE - F::USER_EEPROM_FIRST]);
+        }
     }
 
     SECTION("group addresses are big endian, position 1 is the first group address")

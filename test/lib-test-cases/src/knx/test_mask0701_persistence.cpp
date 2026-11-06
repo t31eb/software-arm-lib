@@ -133,7 +133,15 @@ TEST_CASE("MASK0701 persistence", "[poc][loadstate]")
         f.downloadTables();
         f.restart();
         REQUIRE_FALSE(f.bcu->applicationRunning());
-        REQUIRE(f.memoryRead(F::ADDR_TABLE, 1).data == Data {0});
+        if (F::flashBackend())
+        {
+            // Pages written back on a change of the page stay, only the cached page with the load states is lost
+            REQUIRE(f.memoryRead(F::ADDR_TABLE, 1).data == Data {F::addressTableBytes()[0]});
+        }
+        else
+        {
+            REQUIRE(f.memoryRead(F::ADDR_TABLE, 1).data == Data {0});
+        }
     }
 
     SECTION("a load state written over a property survives a restart")
@@ -161,7 +169,15 @@ TEST_CASE("MASK0701 persistence", "[poc][loadstate]")
         REQUIRE(f.mirrorByte(F::USER_EEPROM_FIRST + 0x04) == lowByte(F::MANUFACTURER));
         REQUIRE(f.mirrorByte(F::USER_EEPROM_FIRST + 0x07) == F::VERSION);
         REQUIRE_FALSE(f.bcu->userEeprom->isModified());
-        REQUIRE(F::flashByte(F::USER_EEPROM_FIRST + 0x0D) == 0x00);
+        if (F::flashBackend())
+        {
+            // BCU2::begin() writes the serial number into another page afterwards, that writes this page back
+            REQUIRE(F::flashByte(F::USER_EEPROM_FIRST + 0x0D) == 0xFF);
+        }
+        else
+        {
+            REQUIRE(F::flashByte(F::USER_EEPROM_FIRST + 0x0D) == 0x00);
+        }
     }
 
     SECTION("the load states of the user EEPROM are written after the parameters of the MemMapper")
@@ -173,12 +189,14 @@ TEST_CASE("MASK0701 persistence", "[poc][loadstate]")
         iap_program_log_count = 0;
         flush(f);
 
-        REQUIRE(iap_program_log_count > 3);
+        // the mirror writes 3 chunks of 1024 bytes, the flash backend the page with the load states
+        const unsigned int userEepromWrites = F::flashBackend() ? 1 : 3;
+        REQUIRE(iap_program_log_count > userEepromWrites);
         REQUIRE(iap_program_log[0] < USER_EEPROM_FLASH);
         REQUIRE(iap_program_log[iap_program_log_count - 1] >= USER_EEPROM_FLASH);
-        for (unsigned int i = 0; i < iap_program_log_count - 3; i++)
+        for (unsigned int i = 0; i < iap_program_log_count - userEepromWrites; i++)
         {
-            REQUIRE(iap_program_log[i] < USER_EEPROM_FLASH); // the user EEPROM takes the last 3 writes
+            REQUIRE(iap_program_log[i] < USER_EEPROM_FLASH); // the user EEPROM takes the last writes
         }
     }
 
@@ -203,25 +221,33 @@ TEST_CASE("MASK0701 persistence", "[poc][loadstate]")
 
         f.memoryWrite(F::USER_EEPROM_FIRST + 0x20, {0x01});
         flush(f);
-        REQUIRE(iap_calls[I_ERASE] == erases + 1);
-        REQUIRE(iap_calls[I_RAM2FLASH] == programs + 3); // 3072 bytes in chunks of 1024 bytes
+        if (F::flashBackend())
+        {
+            REQUIRE(iap_calls[I_ERASE] == erases); // erases only the page, the emulation doesn't count that
+            REQUIRE(iap_calls[I_RAM2FLASH] == programs + 1);
+        }
+        else
+        {
+            REQUIRE(iap_calls[I_ERASE] == erases + 1);
+            REQUIRE(iap_calls[I_RAM2FLASH] == programs + 3); // 3072 bytes in chunks of 1024 bytes
+        }
     }
 
     SECTION("loop() flushes only without a transport layer connection")
     {
         flush(f);
-        const int erases = iap_calls[I_ERASE];
+        const int programs = iap_calls[I_RAM2FLASH];
         f.memoryWrite(F::USER_EEPROM_FIRST + 0x20, {0x01});
 
         f.bcu->state = TLayer4::OPEN_IDLE;
         f.bcu->loop();
-        REQUIRE(iap_calls[I_ERASE] == erases);
+        REQUIRE(iap_calls[I_RAM2FLASH] == programs);
         REQUIRE(f.bcu->userEeprom->isModified());
 
         f.bcu->state = TLayer4::CLOSED;
         setMillis(millis() + 51); // writeDelayElapsed()
         f.bcu->loop();
-        REQUIRE(iap_calls[I_ERASE] == erases + 1);
+        REQUIRE(iap_calls[I_RAM2FLASH] > programs);
         REQUIRE_FALSE(f.bcu->userEeprom->isModified());
     }
 }

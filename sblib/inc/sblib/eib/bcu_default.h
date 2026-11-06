@@ -229,8 +229,21 @@ protected:
      */
     bool flushUserMemory(UsrCallbackType reason) const;
 
+    /** Pauses the bus while a backend of the user EEPROM writes the flash outside of @ref flushUserMemory. */
+    class BusFlashGuard : public FlashGuard
+    {
+    public:
+        explicit BusFlashGuard(BcuDefault* bcu) : bcu(bcu) {}
+        void pauseForFlash() override;
+        void resumeAfterFlash() override;
+
+    private:
+        BcuDefault* const bcu;
+    };
+
     MemMapper* memMapper;
     UsrCallback* usrCallback;
+    BusFlashGuard flashGuard;
     bool sendGrpTelEnabled; //!< Sending of group telegrams is enabled. Usually set, but can be disabled.
     unsigned int groupTelWaitMillis;
     unsigned int groupTelSent;

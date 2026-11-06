@@ -85,6 +85,10 @@ protected:
        :
         UserEepromBCU1(start, size, flashSize) {}
 
+    UserEepromBCU2(const uint32_t start, const uint32_t size, UserEepromBackend* backend)
+       :
+        UserEepromBCU1(start, size, backend) {}
+
 private:
     ///\todo refactor PropertiesBCU2, so that it doesn't need to access private members of UserEepromBCU2,
     ///      then remove this friend declaration

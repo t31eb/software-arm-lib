@@ -106,8 +106,14 @@ public:
     /** Runs the load procedure of ETS for all three tables, data written with A_Memory_Write. */
     void downloadTables();
 
-    /** Direct access to the mirror of the bcu by virtual address, for assertions only. */
+    /** Byte of the user EEPROM as the bcu sees it (the RAM mirror or the cache of the flash backend), for assertions only. */
     [[nodiscard]] uint8_t mirrorByte(uint32_t address) const;
+
+    /**
+     * @return true if the MASK0701 tests run with the user EEPROM in the flash (@ref UserEepromFlash) instead of the
+     *         RAM mirror: environment variable SBLIB_TEST_USER_EEPROM=flash.
+     */
+    [[nodiscard]] static bool flashBackend();
 
     /** Byte in the emulated flash at virtual address @p address of the user EEPROM. */
     [[nodiscard]] static uint8_t flashByte(uint32_t address);
