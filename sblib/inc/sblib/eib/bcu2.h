@@ -68,6 +68,16 @@ public:
     bool applicationRunning() const override;
 
     /**
+     * Sets the load state of an interface object and marks the user EEPROM as modified.
+     *
+     * @details Unwritten parameters of the MemMapper go to the flash before (bus paused). A backend of the user
+     *          EEPROM may persist the load state right away (@ref UserEepromSpi, a page of @ref UserEepromFlash), and
+     *          a power loss must not leave a loaded state with missing parameters. With the RAM mirror,
+     *          @ref flushUserMemory kept this order alone.
+     */
+    void storeLoadState(uint8_t objectIdx, uint8_t state);
+
+    /**
      * Set our own physical address. Normally the physical address is set by ETS when
      * programming the device.
      *

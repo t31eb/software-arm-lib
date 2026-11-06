@@ -183,6 +183,9 @@ public:
      */
     int32_t doFlash() const;
 
+    /** @return true if the allocation table or a data page holds changes that @ref doFlash would write. */
+    [[nodiscard]] bool isModified() const { return flashMemModified || allocTableModified; }
+
     /**
      * @brief Sets the byte order used by the multi-byte accessor methods.
      *

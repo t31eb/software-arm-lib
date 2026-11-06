@@ -96,6 +96,18 @@ inline void BCU2::begin(const int manufacturer, const int deviceType, const int 
     static_cast<ComObjectsBCU2*>(this->comObjects)->printObjectConfigTable();
 }
 
+void BCU2::storeLoadState(const uint8_t objectIdx, const uint8_t state)
+{
+    if ((memMapper != nullptr) && memMapper->isModified())
+    {
+        flashGuard.pauseForFlash();
+        static_cast<void>(memMapper->doFlash());
+        flashGuard.resumeAfterFlash();
+    }
+    userEeprom->setLoadState(objectIdx, state);
+    userEeprom->modified(true);
+}
+
 void BCU2::begin(const int manufacturer, const int deviceType, const int version)
 {
     begin(manufacturer, deviceType, version, 0);

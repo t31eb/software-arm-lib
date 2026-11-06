@@ -252,6 +252,28 @@ TEST_CASE("MASK0701 persistence", "[poc][loadstate]")
     }
 }
 
+TEST_CASE("MASK0701 writes the MemMapper before a load state changes", "[poc][loadstate]")
+{
+    // A backend may persist the load state right away (SPI, a page of the flash backend); a power loss after it
+    // must not leave a loaded state with parameters that are still in the RAM buffer of the MemMapper.
+    F f;
+    flush(f);
+    f.loadControlMem(OT_APPLICATION, LC_START_LOADING);
+    f.memoryWrite(F::MAPPER_START, {0x11, 0x22});
+    REQUIRE(f.memMapper->isModified());
+
+    iap_program_log_count = 0;
+    f.loadControlMem(OT_APPLICATION, LC_LOAD_COMPLETED);
+    REQUIRE_FALSE(f.memMapper->isModified());
+    REQUIRE(iap_program_log_count >= 1);
+    REQUIRE(f.bcu->userEeprom->loadState(OT_APPLICATION) == LS_LOADED);
+
+    // Without changes in the MemMapper nothing is written
+    iap_program_log_count = 0;
+    f.loadControlMem(OT_APPLICATION, LC_LOAD_COMPLETED);
+    REQUIRE(iap_program_log_count == 0);
+}
+
 TEST_CASE("UserEeprom::writeDelayElapsed() waits 50ms after a modification", "[poc][userEeprom]")
 {
     F f;
