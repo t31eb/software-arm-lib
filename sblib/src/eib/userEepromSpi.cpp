@@ -61,6 +61,12 @@ void UserEepromSpi::begin()
         return;
     }
     reload();
+    if (!valid && !chipFailed)
+    {
+        // Now, before the bus starts: during a connection the formatting (about 30 write cycles) blocked the
+        // processing so long that ETS lost a telegram
+        format();
+    }
 }
 
 void UserEepromSpi::reload()

@@ -60,56 +60,44 @@ TEST_CASE("User EEPROM in an SPI EEPROM", "[userEeprom][spiBackend]")
         REQUIRE(chip.busBytes == 0);
     }
 
-    SECTION("an empty chip reads as zeros, writing zeros doesn't format it")
+    SECTION("begin formats an empty chip before the bus starts: zeros page by page, the header last")
     {
         Board board(chip);
         board.backend.begin();
         REQUIRE_FALSE(board.backend.failed());
-        REQUIRE_FALSE(board.backend.formatted());
+        REQUIRE(board.backend.formatted());
+        // 24 pages of data (the header has a page of its own), then the header
+        REQUIRE(chip.writeCycles == 25);
+        REQUIRE(Data(&chip.memory[0], &chip.memory[4]) == Data {'S', 'B', 'U', 'E'});
+        REQUIRE(chip.memory[4] == UserEepromSpi::LAYOUT_VERSION);
+        REQUIRE(chip.memory[6] == lowByte(SIZE));
+        REQUIRE(chip.memory[7] == HIGH_BYTE(SIZE));
+        REQUIRE(Data(&chip.memory[DATA], &chip.memory[DATA + SIZE]) == Data(SIZE, 0));
+        REQUIRE(chip.memory[DATA + SIZE] == 0xff); // behind the user EEPROM nothing is touched
         REQUIRE(readAll(board.backend) == Data(SIZE, 0));
 
+        Board rebooted(chip); // a formatted chip isn't formatted again
         const auto cycles = chip.writeCycles;
-        write(board.backend, 0x10, {0, 0, 0});
+        rebooted.backend.begin();
         REQUIRE(chip.writeCycles == cycles);
-        REQUIRE_FALSE(board.backend.formatted());
     }
 
-    SECTION("the first write formats the chip: zeros first, the header last")
+    SECTION("writes stay over a reset")
     {
         {
             Board board(chip);
             board.backend.begin();
             write(board.backend, 0x370, {1, 2, 3});
             board.backend.flush();
-            REQUIRE(board.backend.formatted());
         }
-        REQUIRE(Data(&chip.memory[0], &chip.memory[4]) == Data {'S', 'B', 'U', 'E'});
-        REQUIRE(chip.memory[4] == UserEepromSpi::LAYOUT_VERSION);
-        REQUIRE(chip.memory[6] == lowByte(SIZE));
-        REQUIRE(chip.memory[7] == HIGH_BYTE(SIZE));
         REQUIRE(Data(&chip.memory[DATA + 0x370], &chip.memory[DATA + 0x373]) == Data {1, 2, 3});
-        REQUIRE(chip.memory[DATA + 0x36F] == 0);
-        REQUIRE(chip.memory[DATA + SIZE - 1] == 0);
-        REQUIRE(chip.memory[DATA + SIZE] == 0xff); // behind the user EEPROM nothing is touched
-
         Board rebooted(chip);
         rebooted.backend.begin();
-        REQUIRE(rebooted.backend.formatted());
         Data expected(SIZE, 0);
         expected[0x370] = 1;
         expected[0x371] = 2;
         expected[0x372] = 3;
         REQUIRE(readAll(rebooted.backend) == expected);
-    }
-
-    SECTION("formatting takes one write cycle per page")
-    {
-        Board board(chip);
-        board.backend.begin();
-        const auto cycles = chip.writeCycles;
-        write(board.backend, 0, {1});
-        // 24 pages of data (the header has a page of its own), the header, the byte
-        REQUIRE(chip.writeCycles - cycles == 26);
     }
 
     SECTION("a power loss while the first data page is written keeps the header")
@@ -119,6 +107,7 @@ TEST_CASE("User EEPROM in an SPI EEPROM", "[userEeprom][spiBackend]")
             board.backend.begin();
             write(board.backend, 0x10, {0x42});
         }
+        const Data header(&chip.memory[0], &chip.memory[UserEepromSpi::HEADER_SIZE]);
         for (uint64_t failAt = 0; failAt < 40; failAt++)
         {
             {
@@ -128,14 +117,15 @@ TEST_CASE("User EEPROM in an SPI EEPROM", "[userEeprom][spiBackend]")
                 write(board.backend, 0x00, {static_cast<uint8_t>(failAt + 1)}); // the page the header shared before
             }
             chip.powerOn();
+            INFO("power loss at bus byte " << failAt);
+            REQUIRE(Data(&chip.memory[0], &chip.memory[UserEepromSpi::HEADER_SIZE]) == header);
             Board rebooted(chip);
             rebooted.backend.begin();
-            INFO("power loss at bus byte " << failAt);
-            REQUIRE(rebooted.backend.formatted());
+            REQUIRE(readAll(rebooted.backend)[0x10] == 0x42); // not formatted again
         }
     }
 
-    SECTION("a corrupted header makes the chip read as empty")
+    SECTION("a corrupted header makes begin format the chip again, it reads as zeros")
     {
         {
             Board board(chip);
@@ -145,7 +135,7 @@ TEST_CASE("User EEPROM in an SPI EEPROM", "[userEeprom][spiBackend]")
         chip.memory[8] ^= 0x01; // CRC
         Board rebooted(chip);
         rebooted.backend.begin();
-        REQUIRE_FALSE(rebooted.backend.formatted());
+        REQUIRE(rebooted.backend.formatted());
         REQUIRE(readAll(rebooted.backend) == Data(SIZE, 0));
     }
 

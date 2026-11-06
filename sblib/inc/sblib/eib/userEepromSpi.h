@@ -39,7 +39,9 @@
  *          The header has a write page of its own (128 bytes on the M95512-R): a power loss in a write cycle destroys
  *          the whole page, but data writes never touch the header page.
  *          The CRC only covers the header. It tells a used chip from an empty or foreign one, which reads as zeros
- *          like an empty flash. The first write formats it: zeros first, the header last. A CRC over the data would
+ *          like an empty flash. @ref begin formats such a chip before the bus starts: zeros first, the header last
+ *          (about 150 ms for 3 KB on a M95512-R). Formatting on the first write instead blocked the processing of a
+ *          telegram during an ETS download so long that ETS lost the next one (06.11.2026). A CRC over the data would
  *          have to follow every write, and a power loss in between would invalidate the whole configuration.
  *
  * @note The chip is accessed only after @ref begin (called by @ref BcuDefault::begin before the bus starts).
@@ -57,7 +59,7 @@ public:
      */
     UserEepromSpi(SpiEeprom& eeprom, uint32_t size, uint32_t chipAddress = 0);
 
-    /** Starts the chip and checks the header. */
+    /** Starts the chip, checks the header and formats an empty or foreign chip. */
     void begin() override;
     void read(uint32_t offset, uint8_t* buffer, uint32_t length) const override;
     void write(uint32_t offset, const uint8_t* buffer, uint32_t length) override;

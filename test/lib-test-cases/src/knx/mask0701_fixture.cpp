@@ -12,6 +12,7 @@
 #include <sblib/eib/userEepromFlash.h>
 #include <sblib/eib/userEepromSpi.h>
 #include <sblib/internal/iap.h>
+#include <sblib/timer.h>
 
 #include <algorithm>
 #include <cstdlib>
@@ -29,8 +30,12 @@ Mask0701Fixture::Mask0701Fixture(std::vector<Range> ranges) :
     mapperRanges(std::move(ranges))
 {
     IAP_Init_Flash(0xff);
+    spiChip().powerOff(); // a power cycle: no write cycle, chip select or write enable of the test before is left
     std::fill(spiChip().memory.begin(), spiChip().memory.end(), 0xff);
     spiChip().powerOn();
+    // The emulated chip sets millis() to its own clock on every access; it must not run behind a time set by a test
+    // before, the driver would see the time go backwards and report a hanging write cycle.
+    spiChip().timeNs = std::max<uint64_t>(spiChip().timeNs, static_cast<uint64_t>(millis()) * 1000000ull);
     boot();
 }
 
