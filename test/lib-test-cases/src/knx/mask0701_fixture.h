@@ -128,6 +128,9 @@ public:
     static SpiEepromEmulator& spiChip();
 
     UserEepromSpi* spiUserEeprom = nullptr; //!< the backend if @ref spiBackend
+    /** With @ref spiBackend the MemMapper range is an extension of the user memory in the chip, at @ref SPI_EXTENSION */
+    UserMemoryExtension* extension = nullptr;
+    static constexpr uint32_t SPI_EXTENSION = 0x1000; //!< chip address of the header of the extension
 
     /**
      * Persistent byte of the user EEPROM at virtual address @p address: in the emulated flash, or in the emulated

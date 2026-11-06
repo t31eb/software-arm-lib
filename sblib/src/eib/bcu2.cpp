@@ -110,6 +110,10 @@ void BCU2::storeLoadState(const uint8_t objectIdx, const uint8_t state)
         static_cast<void>(memMapper->doFlash());
         flashGuard.resumeAfterFlash();
     }
+    if (memoryExtension != nullptr)
+    {
+        memoryExtension->backend()->flush();
+    }
     userEeprom->setLoadState(objectIdx, state);
     userEeprom->modified(true);
     if (objectIdx == OT_ADDR_TABLE)

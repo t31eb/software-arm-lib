@@ -198,9 +198,12 @@ TEST_CASE("MASK0701 persistence", "[poc][loadstate]")
 
         if (F::spiBackend())
         {
-            // The user EEPROM isn't in the flash, storeLoadState() keeps the order (see the next test case)
-            REQUIRE(iap_program_log_count >= 1);
-            REQUIRE(iap_program_log[iap_program_log_count - 1] < USER_EEPROM_FLASH);
+            // Nothing in the flash: user EEPROM and the former MemMapper range are in the chip, written in the order
+            // of the telegrams
+            REQUIRE(iap_program_log_count == 0);
+            const uint32_t data = F::SPI_EXTENSION + UserEepromSpi::HEADER_SIZE;
+            REQUIRE(F::spiChip().memory[data] == 0x11);
+            REQUIRE(F::spiChip().memory[data + 1] == 0x22);
             return;
         }
         // the mirror writes 3 chunks of 1024 bytes, the flash backend the page with the load states
@@ -284,6 +287,10 @@ TEST_CASE("MASK0701 writes the MemMapper before a load state changes", "[poc][lo
 {
     // A backend may persist the load state right away (SPI, a page of the flash backend); a power loss after it
     // must not leave a loaded state with parameters that are still in the RAM buffer of the MemMapper.
+    if (F::spiBackend())
+    {
+        return; // no MemMapper, the extension in the chip is written right away
+    }
     F f;
     flush(f);
     f.loadControlMem(OT_APPLICATION, LC_START_LOADING);

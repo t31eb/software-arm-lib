@@ -181,6 +181,14 @@ bool BcuDefault::readUserMemory(const uint32_t virtAddress, uint8_t* buffer, con
     {
         return userRam->readBlock(virtAddress, buffer, length);
     }
+    else if ((memoryExtension != nullptr) && memoryExtension->inRange(virtAddress))
+    {
+        return memoryExtension->readBlock(virtAddress, buffer, length);
+    }
+    else if ((memMapper != nullptr) && (length > 0) && memMapper->isMappedRange(virtAddress, virtAddress + length - 1))
+    {
+        return memMapper->readMemPtr(virtAddress, buffer, length, false) == MemMapper::Error::Success;
+    }
     return false;
 }
 
@@ -194,12 +202,26 @@ bool BcuDefault::writeUserMemory(const uint32_t virtAddress, const uint8_t* buff
     {
         return userRam->writeBlock(virtAddress, buffer, length);
     }
+    else if ((memoryExtension != nullptr) && memoryExtension->inRange(virtAddress))
+    {
+        return memoryExtension->writeBlock(virtAddress, buffer, length);
+    }
     return false;
 }
 
 void BcuDefault::setMemMapper(MemMapper* mapper)
 {
     memMapper = mapper;
+}
+
+void BcuDefault::setUserMemoryExtension(UserMemoryExtension* extension)
+{
+    memoryExtension = extension;
+    if (extension != nullptr)
+    {
+        extension->backend()->begin();
+        extension->backend()->setFlashGuard(&flashGuard);
+    }
 }
 
 MemMapper* BcuDefault::getMemMapper() const
@@ -373,6 +395,30 @@ bool BcuDefault::processApciMemoryOperation(unsigned int addressStart, uint8_t* 
                     }
                 }
             }
+        }
+
+        // check if payLoad is in the extension of the user memory
+        if ((memoryExtension != nullptr) && memoryExtension->inRange(addressStart))
+        {
+            const unsigned int last = (addressEnd <= memoryExtension->endAddr()) ? addressEnd : memoryExtension->endAddr();
+            const unsigned int copyCount = last - addressStart + 1;
+            // the range is checked, so the block operations can't fail
+            if (readMem)
+            {
+                (void) memoryExtension->readBlock(addressStart, &payLoad[0], copyCount);
+            }
+            else
+            {
+                (void) memoryExtension->writeBlock(addressStart, &payLoad[0], copyCount);
+            }
+            DB_MEM_OPS(serial.println(" -> extension ", copyCount, DEC));
+            if (last == addressEnd)
+            {
+                return (true);
+            }
+            addressStart += copyCount;
+            payLoad += copyCount;
+            startNotFound = false;
         }
 
         // check if payLoad is in userEeprom
@@ -633,6 +679,10 @@ bool BcuDefault::flushUserMemory(const UsrCallbackType reason) const
     if (memMapper)
     {
         memMapper->doFlash();
+    }
+    if (memoryExtension != nullptr)
+    {
+        memoryExtension->backend()->flush();
     }
 
     userEeprom->writeUserEeprom();

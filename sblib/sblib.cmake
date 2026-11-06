@@ -123,6 +123,7 @@ set(SBLIB_KNX_SRC
         inc/sblib/eib/userEepromFlash.h
         inc/sblib/eib/userEepromMirror.h
         inc/sblib/eib/userEepromSpi.h
+        inc/sblib/eib/userMemoryExtension.h
         inc/sblib/eib/userEepromBCU1.h
         inc/sblib/eib/userEepromBCU2.h
         inc/sblib/eib/userEepromMASK0701.h
@@ -173,6 +174,7 @@ set(SBLIB_KNX_SRC
         src/eib/userEepromFlash.cpp
         src/eib/userEepromMirror.cpp
         src/eib/userEepromSpi.cpp
+        src/eib/userMemoryExtension.cpp
         src/eib/userRam.cpp
 )
 

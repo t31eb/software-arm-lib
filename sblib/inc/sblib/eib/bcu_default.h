@@ -13,6 +13,7 @@
 #include <sblib/mem_mapper.h>
 #include <sblib/usr_callback.h>
 #include <sblib/eib/userEeprom.h>
+#include <sblib/eib/userMemoryExtension.h>
 #include <sblib/eib/bcu_base.h>
 
 /**
@@ -131,21 +132,22 @@ public:
     uint8_t* userMemoryPtr(unsigned int addr) const;
 
     /**
-     * Read bytes of the user memory (user EEPROM or user RAM) by virtual address, without a pointer into the memory.
-     * The pointer free counterpart of @ref userMemoryPtr: the memory is chosen by @p virtAddress like there.
+     * Read bytes of the user memory by virtual address, without a pointer into the memory: user EEPROM, user RAM,
+     * the extension (@ref setUserMemoryExtension) or a range of the @ref MemMapper, chosen by @p virtAddress.
      *
      * @param virtAddress Virtual address of the first byte.
      * @param buffer      Buffer of at least @p length bytes, provided by the caller.
      * @param length      Number of bytes to read.
-     * @return true if all bytes were read, false if they are not in one of the two memories.
+     * @return true if all bytes were read, false if they are not completely in one of the memories.
      */
     [[nodiscard]] bool readUserMemory(uint32_t virtAddress, uint8_t* buffer, uint32_t length) const;
 
     /**
-     * Write bytes of the user memory (user EEPROM or user RAM) by virtual address, without a pointer into the memory.
-     * The memory is chosen by @p virtAddress like in @ref userMemoryPtr. Writing the user EEPROM marks it as modified.
+     * Write bytes of the user memory by virtual address, without a pointer into the memory: user EEPROM, user RAM or
+     * the extension (@ref setUserMemoryExtension), chosen by @p virtAddress. Writing the user EEPROM marks it as
+     * modified. The @ref MemMapper is not written here, memory telegrams reach it.
      *
-     * @return true if all bytes were written, false if they are not in one of the two memories.
+     * @return true if all bytes were written, false if they are not completely in one of the memories.
      */
     bool writeUserMemory(uint32_t virtAddress, const uint8_t* buffer, uint32_t length);
 
@@ -160,6 +162,19 @@ public:
      * @param mapper - a pointer to an instance of a MemMapper object
      */
     void setMemMapper(MemMapper* mapper);
+
+    /**
+     * A further range of configuration memory beside the user EEPROM, e.g. instead of a @ref MemMapper range when the
+     * user EEPROM is in an external EEPROM. Memory telegrams and @ref readUserMemory / @ref writeUserMemory reach it,
+     * @ref flushUserMemory and @ref BCU2::storeLoadState flush it before the user EEPROM. Calls the begin() of its
+     * backend, so it can be set before or after @ref begin.
+     *
+     * @param extension The range, @c nullptr for none; it has to live as long as the bcu
+     */
+    void setUserMemoryExtension(UserMemoryExtension* extension);
+
+    /** @return The range set by @ref setUserMemoryExtension, @c nullptr if none */
+    [[nodiscard]] UserMemoryExtension* userMemoryExtension() const { return memoryExtension; }
 
 
     /**
@@ -242,6 +257,7 @@ protected:
     };
 
     MemMapper* memMapper;
+    UserMemoryExtension* memoryExtension = nullptr; //!< see @ref setUserMemoryExtension
     UsrCallback* usrCallback;
     BusFlashGuard flashGuard;
     bool sendGrpTelEnabled; //!< Sending of group telegrams is enabled. Usually set, but can be disabled.

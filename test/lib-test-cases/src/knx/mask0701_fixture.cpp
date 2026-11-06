@@ -41,7 +41,7 @@ Mask0701Fixture::~Mask0701Fixture()
 
 void Mask0701Fixture::boot()
 {
-    if (!mapperRanges.empty())
+    if (!mapperRanges.empty() && !spiBackend())
     {
         memMapper = new MemMapper(0xe000, 0x1000, false);
         for (const auto& [start, length] : mapperRanges)
@@ -56,6 +56,12 @@ void Mask0701Fixture::boot()
         auto* eeprom = new SpiEeprom(spiChip(), SPI_EEPROM_M95512R); // lives as long as the test program, like the bcu
         spiUserEeprom = new UserEepromSpi(*eeprom, UserEepromMASK0701::SIZE);
         bcu = new MASK0701(spiUserEeprom);
+        // The MemMapper range moves into the same chip, as an extension of the user memory
+        REQUIRE(mapperRanges.size() <= 1);
+        for (const auto& [start, length] : mapperRanges)
+        {
+            extension = new UserMemoryExtension(start, length, new UserEepromSpi(*eeprom, length, SPI_EXTENSION));
+        }
     }
     else
     {
@@ -64,6 +70,10 @@ void Mask0701Fixture::boot()
     bcuUnderTest = bcu;
     bcu->begin(MANUFACTURER, DEVICE_TYPE, VERSION);
     bcu->setMemMapper(memMapper);
+    if (extension != nullptr)
+    {
+        bcu->setUserMemoryExtension(extension);
+    }
 }
 
 void Mask0701Fixture::shutdown()
@@ -73,6 +83,7 @@ void Mask0701Fixture::shutdown()
     bcu = nullptr;
     delete memMapper;
     memMapper = nullptr;
+    extension = nullptr; // like the backends, lives as long as the test program
 }
 
 void Mask0701Fixture::restart()
