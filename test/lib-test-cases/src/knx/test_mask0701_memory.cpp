@@ -156,7 +156,14 @@ TEST_CASE("MASK0701 memory operations over range boundaries", "[poc][memory]")
 
         const auto result = f.memoryRead(address, 4);
         REQUIRE(result.count == 4);
-        REQUIRE(result.data == PATTERN);
+        auto expected = PATTERN;
+        if (Mask0701Fixture::flashBackend())
+        {
+            // The extension in the flash shares the cache with the user EEPROM: writing it wrote the last page of the
+            // user EEPROM back, its last byte is the valid marker and reads as 0 since then
+            expected[1] = 0;
+        }
+        REQUIRE(result.data == expected);
     }
 
     SECTION("MemMapper range into the user EEPROM")

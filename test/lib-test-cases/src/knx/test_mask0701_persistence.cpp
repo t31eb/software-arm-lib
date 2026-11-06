@@ -206,8 +206,18 @@ TEST_CASE("MASK0701 persistence", "[poc][loadstate]")
             REQUIRE(F::spiChip().memory[data + 1] == 0x22);
             return;
         }
-        // the mirror writes 3 chunks of 1024 bytes, the flash backend the page with the load states
-        const unsigned int userEepromWrites = F::flashBackend() ? 1 : 3;
+        if (F::flashBackend())
+        {
+            // The extension in the flash shares the cache with the user EEPROM: writing it wrote the page with the
+            // load states back already, in the order of the telegrams like the SPI chip. Flush writes the extension.
+            REQUIRE(iap_program_log_count == 1);
+            REQUIRE(iap_program_log[0] == F::FLASH_EXTENSION);
+            REQUIRE(FLASH[F::FLASH_EXTENSION] == 0x11);
+            REQUIRE(FLASH[F::FLASH_EXTENSION + 1] == 0x22);
+            return;
+        }
+        // the mirror writes 3 chunks of 1024 bytes
+        const unsigned int userEepromWrites = 3;
         REQUIRE(iap_program_log_count > userEepromWrites);
         REQUIRE(iap_program_log[0] < USER_EEPROM_FLASH);
         REQUIRE(iap_program_log[iap_program_log_count - 1] >= USER_EEPROM_FLASH);
@@ -295,11 +305,28 @@ TEST_CASE("MASK0701 writes the MemMapper before a load state changes", "[poc][lo
     flush(f);
     f.loadControlMem(OT_APPLICATION, LC_START_LOADING);
     f.memoryWrite(F::MAPPER_START, {0x11, 0x22});
-    REQUIRE(f.memMapper->isModified());
+    if (F::flashBackend())
+    {
+        // The extension in the flash instead of the MemMapper: its page waits in the cache shared with the user EEPROM
+        REQUIRE(FLASH[F::FLASH_EXTENSION] == 0xff);
+    }
+    else
+    {
+        REQUIRE(f.memMapper->isModified());
+    }
 
     iap_program_log_count = 0;
     f.loadControlMem(OT_APPLICATION, LC_LOAD_COMPLETED);
-    REQUIRE_FALSE(f.memMapper->isModified());
+    if (F::flashBackend())
+    {
+        REQUIRE(FLASH[F::FLASH_EXTENSION] == 0x11);
+        REQUIRE(FLASH[F::FLASH_EXTENSION + 1] == 0x22);
+        REQUIRE(iap_program_log[0] == F::FLASH_EXTENSION); // before the page with the load state
+    }
+    else
+    {
+        REQUIRE_FALSE(f.memMapper->isModified());
+    }
     REQUIRE(iap_program_log_count >= 1);
     REQUIRE(f.bcu->userEeprom->loadState(OT_APPLICATION) == LS_LOADED);
 

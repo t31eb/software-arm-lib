@@ -12,6 +12,7 @@
 #include <protocol.h> // grants access to private and protected members of the bcu classes
 #include <spi_eeprom_emulator.h>
 
+#include <sblib/eib/userEepromFlash.h>
 #include <sblib/eib/userEepromSpi.h>
 
 #include <sblib/bits.h>
@@ -128,9 +129,13 @@ public:
     static SpiEepromEmulator& spiChip();
 
     UserEepromSpi* spiUserEeprom = nullptr; //!< the backend if @ref spiBackend
-    /** With @ref spiBackend the MemMapper range is an extension of the user memory in the chip, at @ref SPI_EXTENSION */
+    /**
+     * With @ref spiBackend the MemMapper range is an extension of the user memory in the chip, at @ref SPI_EXTENSION.
+     * With @ref flashBackend it is one in the flash at @ref FLASH_EXTENSION, sharing the cache of the user EEPROM.
+     */
     UserMemoryExtension* extension = nullptr;
-    static constexpr uint32_t SPI_EXTENSION = 0x1000; //!< chip address of the header of the extension
+    static constexpr uint32_t SPI_EXTENSION = 0x1000;   //!< chip address of the header of the extension
+    static constexpr uint32_t FLASH_EXTENSION = 0xE100; //!< flash offset of the extension, where the MemMapper keeps it
 
     /**
      * Persistent byte of the user EEPROM at virtual address @p address: in the emulated flash, or in the emulated

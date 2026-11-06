@@ -46,7 +46,7 @@ Mask0701Fixture::~Mask0701Fixture()
 
 void Mask0701Fixture::boot()
 {
-    if (!mapperRanges.empty() && !spiBackend())
+    if (!mapperRanges.empty() && !spiBackend() && !flashBackend())
     {
         memMapper = new MemMapper(0xe000, 0x1000, false);
         for (const auto& [start, length] : mapperRanges)
@@ -68,9 +68,21 @@ void Mask0701Fixture::boot()
             extension = new UserMemoryExtension(start, length, new UserEepromSpi(*eeprom, length, SPI_EXTENSION));
         }
     }
+    else if (flashBackend())
+    {
+        // A new cache on every boot: a restart loses the RAM. Like the backends, it lives as long as the test program.
+        auto* cache = new FlashPageCache();
+        bcu = new MASK0701(new UserEepromFlash(UserEepromMASK0701::SIZE, *cache));
+        // The MemMapper range stays in the flash, where the MemMapper keeps it, through the same cache
+        REQUIRE(mapperRanges.size() <= 1);
+        for (const auto& [start, length] : mapperRanges)
+        {
+            extension = new UserMemoryExtension(start, length, new UserEepromFlash(length, *cache, FLASH_EXTENSION));
+        }
+    }
     else
     {
-        bcu = flashBackend() ? new MASK0701(new UserEepromFlash(UserEepromMASK0701::SIZE, *new FlashPageCache())) : new MASK0701();
+        bcu = new MASK0701();
     }
     bcuUnderTest = bcu;
     bcu->begin(MANUFACTURER, DEVICE_TYPE, VERSION);
