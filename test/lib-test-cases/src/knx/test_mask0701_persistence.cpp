@@ -132,6 +132,12 @@ TEST_CASE("MASK0701 persistence", "[poc][loadstate]")
     {
         f.downloadTables();
         f.restart();
+        if (F::spiBackend())
+        {
+            // Every write reaches the chip right away, the download is complete
+            REQUIRE(f.bcu->applicationRunning());
+            return;
+        }
         REQUIRE_FALSE(f.bcu->applicationRunning());
         if (F::flashBackend())
         {
@@ -169,9 +175,10 @@ TEST_CASE("MASK0701 persistence", "[poc][loadstate]")
         REQUIRE(f.mirrorByte(F::USER_EEPROM_FIRST + 0x04) == lowByte(F::MANUFACTURER));
         REQUIRE(f.mirrorByte(F::USER_EEPROM_FIRST + 0x07) == F::VERSION);
         REQUIRE_FALSE(f.bcu->userEeprom->isModified());
-        if (F::flashBackend())
+        if (F::flashBackend() || F::spiBackend())
         {
-            // BCU2::begin() writes the serial number into another page afterwards, that writes this page back
+            // flash: BCU2::begin() writes the serial number into another page afterwards, that writes this page back;
+            // SPI: every write reaches the chip right away
             REQUIRE(F::flashByte(F::USER_EEPROM_FIRST + 0x0D) == 0xFF);
         }
         else
@@ -189,6 +196,13 @@ TEST_CASE("MASK0701 persistence", "[poc][loadstate]")
         iap_program_log_count = 0;
         flush(f);
 
+        if (F::spiBackend())
+        {
+            // The user EEPROM isn't in the flash, storeLoadState() keeps the order (see the next test case)
+            REQUIRE(iap_program_log_count >= 1);
+            REQUIRE(iap_program_log[iap_program_log_count - 1] < USER_EEPROM_FLASH);
+            return;
+        }
         // the mirror writes 3 chunks of 1024 bytes, the flash backend the page with the load states
         const unsigned int userEepromWrites = F::flashBackend() ? 1 : 3;
         REQUIRE(iap_program_log_count > userEepromWrites);
@@ -205,8 +219,9 @@ TEST_CASE("MASK0701 persistence", "[poc][loadstate]")
         f.memoryWrite(F::USER_EEPROM_LAST, {0x5A});
         REQUIRE(f.mirrorByte(F::USER_EEPROM_LAST) == 0x5A);
         flush(f);
-        REQUIRE(f.mirrorByte(F::USER_EEPROM_LAST) == 0x00);
-        REQUIRE(F::flashByte(F::USER_EEPROM_LAST) == 0x00);
+        const uint8_t expected = F::spiBackend() ? 0x5A : 0x00; // the SPI chip has a header instead of a marker
+        REQUIRE(f.mirrorByte(F::USER_EEPROM_LAST) == expected);
+        REQUIRE(F::flashByte(F::USER_EEPROM_LAST) == expected);
     }
 
     SECTION("nothing is written without modifications, every flush with modifications erases the sector")
@@ -219,9 +234,15 @@ TEST_CASE("MASK0701 persistence", "[poc][loadstate]")
         REQUIRE(iap_calls[I_ERASE] == erases);
         REQUIRE(iap_calls[I_RAM2FLASH] == programs);
 
+        const auto cycles = F::spiChip().writeCycles;
         f.memoryWrite(F::USER_EEPROM_FIRST + 0x20, {0x01});
         flush(f);
-        if (F::flashBackend())
+        if (F::spiBackend())
+        {
+            REQUIRE(iap_calls[I_RAM2FLASH] == programs);
+            REQUIRE(F::spiChip().writeCycles == cycles + 1);
+        }
+        else if (F::flashBackend())
         {
             REQUIRE(iap_calls[I_ERASE] == erases); // erases only the page, the emulation doesn't count that
             REQUIRE(iap_calls[I_RAM2FLASH] == programs + 1);
@@ -246,8 +267,15 @@ TEST_CASE("MASK0701 persistence", "[poc][loadstate]")
 
         f.bcu->state = TLayer4::CLOSED;
         setMillis(millis() + 51); // writeDelayElapsed()
+        if (F::spiBackend())
+        {
+            F::spiChip().timeNs += 51'000'000ull; // the emulated chip sets millis() to its own clock on every access
+        }
         f.bcu->loop();
-        REQUIRE(iap_calls[I_RAM2FLASH] > programs);
+        if (!F::spiBackend()) // the SPI chip has the byte already, flush only waits for the write cycle
+        {
+            REQUIRE(iap_calls[I_RAM2FLASH] > programs);
+        }
         REQUIRE_FALSE(f.bcu->userEeprom->isModified());
     }
 }

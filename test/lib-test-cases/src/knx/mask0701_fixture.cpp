@@ -10,6 +10,7 @@
 
 #include <sblib/eib/apci.h>
 #include <sblib/eib/userEepromFlash.h>
+#include <sblib/eib/userEepromSpi.h>
 #include <sblib/internal/iap.h>
 
 #include <algorithm>
@@ -28,6 +29,8 @@ Mask0701Fixture::Mask0701Fixture(std::vector<Range> ranges) :
     mapperRanges(std::move(ranges))
 {
     IAP_Init_Flash(0xff);
+    std::fill(spiChip().memory.begin(), spiChip().memory.end(), 0xff);
+    spiChip().powerOn();
     boot();
 }
 
@@ -47,7 +50,17 @@ void Mask0701Fixture::boot()
         }
     }
 
-    bcu = flashBackend() ? new MASK0701(new UserEepromFlash(UserEepromMASK0701::SIZE)) : new MASK0701();
+    if (spiBackend())
+    {
+        spiChip().powerOn();
+        auto* eeprom = new SpiEeprom(spiChip(), SPI_EEPROM_M95512R); // lives as long as the test program, like the bcu
+        spiUserEeprom = new UserEepromSpi(*eeprom, UserEepromMASK0701::SIZE);
+        bcu = new MASK0701(spiUserEeprom);
+    }
+    else
+    {
+        bcu = flashBackend() ? new MASK0701(new UserEepromFlash(UserEepromMASK0701::SIZE)) : new MASK0701();
+    }
     bcuUnderTest = bcu;
     bcu->begin(MANUFACTURER, DEVICE_TYPE, VERSION);
     bcu->setMemMapper(memMapper);
@@ -246,5 +259,22 @@ bool Mask0701Fixture::flashBackend()
 
 uint8_t Mask0701Fixture::flashByte(const uint32_t address)
 {
+    if (spiBackend())
+    {
+        return spiChip().memory[UserEepromSpi::HEADER_SIZE + address - USER_EEPROM_FIRST];
+    }
     return FLASH[0xF000 + address - USER_EEPROM_FIRST];
+}
+
+bool Mask0701Fixture::spiBackend()
+{
+    const char* backend = std::getenv("SBLIB_TEST_USER_EEPROM");
+    return (backend != nullptr) && (std::strcmp(backend, "spi") == 0);
+}
+
+SpiEepromEmulator& Mask0701Fixture::spiChip()
+{
+    // A short write cycle keeps the tests fast, the waiting is the same as with 5 ms
+    static SpiEepromEmulator chip(SPI_EEPROM_M95512R, 50);
+    return chip;
 }

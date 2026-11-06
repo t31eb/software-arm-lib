@@ -30,7 +30,7 @@ TEST_CASE("MASK0701 tables after a download", "[poc][tables]")
 
     SECTION("tables point into the mirror")
     {
-        if (!F::flashBackend()) // without a mirror the pointer interface calls fatalError()
+        if (f.bcu->userEeprom->userEepromData != nullptr) // without a mirror the pointer interface calls fatalError()
         {
             REQUIRE(tables->addrTable() == &f.bcu->userEeprom->userEepromData[F::ADDR_TABLE - F::USER_EEPROM_FIRST]);
             REQUIRE(tables->assocTable() == &f.bcu->userEeprom->userEepromData[F::ASSOC_TABLE - F::USER_EEPROM_FIRST]);

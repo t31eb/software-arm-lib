@@ -138,6 +138,12 @@ if(SBLIB_ARCHITECTURE STREQUAL "x86")
         WORKING_DIRECTORY $<TARGET_FILE_DIR:${TARGET_X86}>
     )
     set_tests_properties(${TARGET_X86}_flash_junit PROPERTIES ENVIRONMENT SBLIB_TEST_USER_EEPROM=flash)
+    # ... and in an emulated SPI EEPROM M95512-R (UserEepromSpi)
+    add_test(NAME ${TARGET_X86}_spi_junit
+        COMMAND ${TARGET_X86} --reporter junit --out $<TARGET_FILE_DIR:${TARGET_X86}>/${TARGET_X86}_spi_result.xml
+        WORKING_DIRECTORY $<TARGET_FILE_DIR:${TARGET_X86}>
+    )
+    set_tests_properties(${TARGET_X86}_spi_junit PROPERTIES ENVIRONMENT SBLIB_TEST_USER_EEPROM=spi)
 
 # Check if building for 64bit architecture
 elseif(SBLIB_ARCHITECTURE STREQUAL "x64")
@@ -181,6 +187,12 @@ elseif(SBLIB_ARCHITECTURE STREQUAL "x64")
         WORKING_DIRECTORY $<TARGET_FILE_DIR:${TARGET_X64}>
     )
     set_tests_properties(${TARGET_X64}_flash_junit PROPERTIES ENVIRONMENT SBLIB_TEST_USER_EEPROM=flash)
+    # ... and in an emulated SPI EEPROM M95512-R (UserEepromSpi)
+    add_test(NAME ${TARGET_X64}_spi_junit
+        COMMAND ${TARGET_X64} --reporter junit --out $<TARGET_FILE_DIR:${TARGET_X64}>/${TARGET_X64}_spi_result.xml
+        WORKING_DIRECTORY $<TARGET_FILE_DIR:${TARGET_X64}>
+    )
+    set_tests_properties(${TARGET_X64}_spi_junit PROPERTIES ENVIRONMENT SBLIB_TEST_USER_EEPROM=spi)
 else()
     message(FATAL_ERROR "Unknown architecture ${SBLIB_ARCHITECTURE}. (project ${PROJECT_NAME})")
 endif()

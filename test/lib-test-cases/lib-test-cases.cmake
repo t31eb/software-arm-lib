@@ -44,6 +44,7 @@ set(SBLIB_LIB_TEST_CASES_SRC
         src/knx/test_mask0701_receive.cpp
         src/knx/test_mask0701_layout.cpp
         src/knx/test_user_eeprom_flash.cpp
+        src/knx/test_user_eeprom_spi.cpp
         src/knx/test_memory_api.cpp
         src/test_spi_eeprom.cpp
 )

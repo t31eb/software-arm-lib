@@ -10,6 +10,9 @@
 #define TEST_SBLIB_KNX_MASK0701_FIXTURE_H_
 
 #include <protocol.h> // grants access to private and protected members of the bcu classes
+#include <spi_eeprom_emulator.h>
+
+#include <sblib/eib/userEepromSpi.h>
 
 #include <sblib/bits.h>
 #include <sblib/mem_mapper.h>
@@ -115,7 +118,21 @@ public:
      */
     [[nodiscard]] static bool flashBackend();
 
-    /** Byte in the emulated flash at virtual address @p address of the user EEPROM. */
+    /**
+     * @return true if the MASK0701 tests run with the user EEPROM in an emulated SPI EEPROM M95512-R
+     *         (@ref UserEepromSpi): environment variable SBLIB_TEST_USER_EEPROM=spi.
+     */
+    [[nodiscard]] static bool spiBackend();
+
+    /** The emulated SPI chip, it keeps its memory over @ref restart and is erased (0xff) by the constructor. */
+    static SpiEepromEmulator& spiChip();
+
+    UserEepromSpi* spiUserEeprom = nullptr; //!< the backend if @ref spiBackend
+
+    /**
+     * Persistent byte of the user EEPROM at virtual address @p address: in the emulated flash, or in the emulated
+     * SPI chip if the tests run with @ref spiBackend.
+     */
     [[nodiscard]] static uint8_t flashByte(uint32_t address);
 
     MASK0701* bcu = nullptr;
