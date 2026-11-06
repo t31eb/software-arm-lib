@@ -220,3 +220,32 @@ TEST_CASE("MASK0701 with the user EEPROM in an SPI EEPROM: power loss during a d
     }
     REQUIRE(loadedAfterFailure > 0);
 }
+
+TEST_CASE("MASK0701 with the user EEPROM in an SPI EEPROM: group addresses without SPI in the bus interrupt",
+          "[poc][spiBackend]")
+{
+    // The bus interrupt calls indexOfAddr() for every group telegram; an SPI transfer there would break one of the
+    // main program. With the SPI backend the group addresses are kept in RAM.
+    if (!Mask0701Fixture::spiBackend())
+    {
+        return;
+    }
+    using F = Mask0701Fixture;
+    SpiEepromEmulator& chip = F::spiChip();
+    F f;
+    AddrTables* tables = f.bcu->addrTables;
+    REQUIRE(tables->indexOfAddr(F::GROUP_ADDRESS_1) == -1); // empty chip
+
+    f.downloadTables(); // the load control of the address table refreshes the copy
+    auto busBytes = chip.busBytes;
+    REQUIRE(tables->indexOfAddr(F::GROUP_ADDRESS_1) == 1);
+    REQUIRE(tables->indexOfAddr(F::GROUP_ADDRESS_2) == 2);
+    REQUIRE(tables->indexOfAddr(F::PHANTOM_GROUP_ADDRESS) == -1);
+    REQUIRE(chip.busBytes == busBytes);
+
+    f.restart(); // begin() reads the copy
+    busBytes = chip.busBytes;
+    REQUIRE(tables != f.bcu->addrTables);
+    REQUIRE(f.bcu->addrTables->indexOfAddr(F::GROUP_ADDRESS_2) == 2);
+    REQUIRE(chip.busBytes == busBytes);
+}

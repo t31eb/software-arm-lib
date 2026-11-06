@@ -66,6 +66,9 @@ public:
     /** Checks the header again. There is nothing cached, so there is nothing to discard. */
     void reload() override;
 
+    /** An SPI transfer in an interrupt would break one of the main program, see @ref AddrTablesBCU2::enableGroupAddressCache */
+    [[nodiscard]] bool readableInInterrupt() const override { return false; }
+
     /** @return true if the chip didn't answer in @ref begin or a write failed */
     [[nodiscard]] bool failed() const { return chipFailed; }
 

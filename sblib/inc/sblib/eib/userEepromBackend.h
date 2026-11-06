@@ -93,6 +93,12 @@ public:
      */
     [[nodiscard]] virtual uint8_t* mirror() const { return nullptr; }
 
+    /**
+     * @return true if @ref read may be called in an interrupt, also while the main program is in the middle of an
+     *         access. The bus interrupt looks up group addresses in the address table (@ref AddrTables::indexOfAddr).
+     */
+    [[nodiscard]] virtual bool readableInInterrupt() const { return true; }
+
     /** Sets the guard to ask before writing the flash outside of @ref flush, @c nullptr for none. */
     void setFlashGuard(FlashGuard* guard) { flashGuard = guard; }
 

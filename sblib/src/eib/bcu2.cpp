@@ -92,6 +92,12 @@ inline void BCU2::begin(const int manufacturer, const int deviceType, const int 
     orderInfo[sizeof(orderInfo) - 1] = lowByte(SBLIB_VERSION);
     userEeprom->writeOrderInfo(orderInfo);
 
+    // Before the bus starts: its interrupt looks up group addresses
+    if (!userEeprom->backend()->readableInInterrupt())
+    {
+        static_cast<AddrTablesBCU2*>(addrTables)->enableGroupAddressCache();
+    }
+
     BcuDefault::_begin();
     static_cast<ComObjectsBCU2*>(this->comObjects)->printObjectConfigTable();
 }
@@ -106,6 +112,10 @@ void BCU2::storeLoadState(const uint8_t objectIdx, const uint8_t state)
     }
     userEeprom->setLoadState(objectIdx, state);
     userEeprom->modified(true);
+    if (objectIdx == OT_ADDR_TABLE)
+    {
+        static_cast<AddrTablesBCU2*>(addrTables)->refreshGroupAddresses();
+    }
 }
 
 void BCU2::begin(const int manufacturer, const int deviceType, const int version)

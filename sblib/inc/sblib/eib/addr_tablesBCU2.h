@@ -66,8 +66,26 @@ public:
      */
     bool writeAddrTable(uint32_t offset, const uint8_t* buffer, uint32_t length);
 
+    /**
+     * From now on @ref indexOfAddr searches a copy of the group addresses in RAM (2 bytes per address).
+     *
+     * @details The bus interrupt calls @ref indexOfAddr for every group telegram. If the user EEPROM can't be read in an
+     *          interrupt (@ref UserEepromBackend::readableInInterrupt, e.g. an SPI EEPROM), @ref BCU2 enables the copy.
+     *          It is read again by @ref refreshGroupAddresses, which @ref BCU2::storeLoadState calls whenever the load
+     *          state of the address table changes. A table changed without load control stays unseen until the next
+     *          start.
+     */
+    void enableGroupAddressCache();
+
+    /** Reads the group addresses into the RAM copy again, if it is enabled. Not in an interrupt. */
+    void refreshGroupAddresses();
+
 private:
     BCU2* bcu;
+    bool groupAddressCacheEnabled = false;
+    /** RAM copy of the group addresses: [0] number of addresses, then the addresses (high byte first in the table).
+     *  Replaced as a whole, the bus interrupt reads the pointer once. */
+    uint16_t* volatile groupAddresses = nullptr;
 };
 
 #endif /* SBLIB_KNX_ADDR_TABLES_BCU2_H_ */
