@@ -96,6 +96,10 @@ LoadState PropertiesMASK0701::handleAllocAbsDataSegment([[maybe_unused]] const i
             MemMapper* bcuMemMapper = bcu->getMemMapper();
             memStartValid |= (bcuMemMapper != nullptr) && (bcuMemMapper->isMapped(absDataSegmentStartAddress));
             memEndValid |= (bcuMemMapper != nullptr) && (bcuMemMapper->isMapped(absDataSegmentEndAddress));
+            // check against the extension of the user memory (replaces the MemMapper with an external EEPROM)
+            const UserMemoryExtension* extension = bcu->userMemoryExtension();
+            memStartValid |= (extension != nullptr) && extension->inRange(absDataSegmentStartAddress);
+            memEndValid |= (extension != nullptr) && extension->inRange(absDataSegmentEndAddress);
 
             newLoadState = LS_LOADING;
             break;

@@ -332,3 +332,33 @@ TEST_CASE("UserEeprom::writeDelayElapsed() waits 50ms after a modification", "[p
         REQUIRE_FALSE(eeprom->writeDelayElapsed());
     }
 }
+
+TEST_CASE("MASK0701 allocates a data segment only in a known memory", "[poc][loadstate]")
+{
+    // Additional Load Control AllocAbsDataSeg over DMP_LoadStateMachineWrite_RCo_Mem, as ETS sends it for the segment
+    // 0x6000-0x6EFF of the MultiSensorAktor (LdCtrlAbsSegment LsmIdx 3, MemType 3, SegFlags 0x80), recorded 06.11.2026.
+    // The range is the MemMapper range of the fixture, or with the SPI backend the extension of the user memory.
+    const auto allocData = [](F& f, const uint16_t address, const uint16_t length) {
+        f.memoryWrite(0x104, {static_cast<uint8_t>((OT_APPLICATION << 4) | LC_ADDITIONAL_LOAD_CONTROLS), 0x00,
+                              HIGH_BYTE(address), lowByte(address), HIGH_BYTE(length), lowByte(length), 0xFF, 0x03,
+                              0x80, 0x00});
+        return f.bcu->userEeprom->loadState(OT_APPLICATION);
+    };
+    F f;
+    f.loadControlMem(OT_APPLICATION, LC_START_LOADING);
+
+    SECTION("the segment of the MultiSensorAktor")
+    {
+        REQUIRE(allocData(f, 0x6000, 0x0F00) == LS_LOADING);
+    }
+
+    SECTION("inside of the user EEPROM")
+    {
+        REQUIRE(allocData(f, 0x4800, 0x0100) == LS_LOADING);
+    }
+
+    SECTION("outside of every memory")
+    {
+        REQUIRE(allocData(f, 0x9000, 0x0100) == LS_ERROR);
+    }
+}
