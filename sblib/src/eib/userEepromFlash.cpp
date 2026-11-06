@@ -99,6 +99,7 @@ void UserEepromFlash::flush()
 
 void UserEepromFlash::load(const uint32_t page)
 {
+    cachedPage = NO_PAGE; // the bus interrupt may read meanwhile, from the flash then
     if (valid)
     {
         memcpy(cache, flashAddress(page * FLASH_PAGE_SIZE), FLASH_PAGE_SIZE);
@@ -136,6 +137,7 @@ void UserEepromFlash::format()
     const uint32_t changedPage = cachedPage;
     program(changedPage);
 
+    cachedPage = NO_PAGE; // the cache doesn't hold the changed page anymore
     memset(cache, 0, FLASH_PAGE_SIZE);
     const uint32_t pages = (size() + FLASH_PAGE_SIZE - 1) / FLASH_PAGE_SIZE;
     for (uint32_t page = 0; page < pages; page++)
