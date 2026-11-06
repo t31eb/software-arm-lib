@@ -50,7 +50,9 @@ public:
  *          All offsets are relative to the start of the user EEPROM. Implementations:
  *          - @ref UserEepromMirror: the whole user EEPROM as a mirror in RAM, persisted in one flash page.
  *            Default, used by all masks.
- *          - @ref UserEepromFlash: reads directly from the flash, writes through a cache of one flash page.
+ *          - @ref UserEepromFlash: reads directly from the flash, writes through a cache of one flash page, which
+ *            further backends (e.g. a @ref UserMemoryExtension in the flash) may share.
+ *          - @ref UserEepromSpi: in an external SPI EEPROM or FRAM, nothing in RAM.
  */
 class UserEepromBackend
 {

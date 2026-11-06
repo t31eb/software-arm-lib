@@ -12,22 +12,46 @@
 #include <algorithm>
 #include <cstring>
 
-UserEepromFlash::UserEepromFlash(const uint32_t size) :
-    UserEepromBackend(size)
+UserEepromFlash::UserEepromFlash(const uint32_t size, FlashPageCache& cache) :
+    UserEepromBackend(size),
+    cache(cache),
+    flashStart(iapFlashSize() - FLASH_SECTOR_SIZE),
+    marker(true)
 {
+    reload();
+}
+
+UserEepromFlash::UserEepromFlash(const uint32_t size, FlashPageCache& cache, const uint32_t flashOffset) :
+    UserEepromBackend(size),
+    cache(cache),
+    flashStart(flashOffset),
+    marker(false)
+{
+    if (((flashOffset % FLASH_PAGE_SIZE) != 0) || (flashOffset + size > iapFlashSize()))
+    {
+        fatalError();
+    }
     reload();
 }
 
 uint8_t* UserEepromFlash::flashAddress(const uint32_t offset) const
 {
-    return FLASH_BASE_ADDRESS + iapFlashSize() - FLASH_SECTOR_SIZE + offset;
+    return FLASH_BASE_ADDRESS + flashStart + offset;
+}
+
+bool UserEepromFlash::isCached(const uint32_t page) const
+{
+    return (cache.owner == this) && (cache.page == page);
 }
 
 void UserEepromFlash::reload()
 {
-    cachedPage = NO_PAGE;
-    dirty = false;
-    valid = (*flashAddress(size() - 1) != 0xff);
+    if (cache.owner == this)
+    {
+        cache.owner = nullptr;
+        cache.dirty = false;
+    }
+    valid = !marker || (*flashAddress(size() - 1) != 0xff);
 }
 
 void UserEepromFlash::read(uint32_t offset, uint8_t* buffer, uint32_t length) const
@@ -37,9 +61,9 @@ void UserEepromFlash::read(uint32_t offset, uint8_t* buffer, uint32_t length) co
         const uint32_t page = offset / FLASH_PAGE_SIZE;
         const uint32_t pos = offset % FLASH_PAGE_SIZE;
         const uint32_t count = std::min(length, FLASH_PAGE_SIZE - pos);
-        if (page == cachedPage)
+        if (isCached(page))
         {
-            memcpy(buffer, cache + pos, count);
+            memcpy(buffer, cache.data + pos, count);
         }
         else if (valid)
         {
@@ -62,15 +86,15 @@ void UserEepromFlash::write(uint32_t offset, const uint8_t* buffer, uint32_t len
         const uint32_t page = offset / FLASH_PAGE_SIZE;
         const uint32_t pos = offset % FLASH_PAGE_SIZE;
         const uint32_t count = std::min(length, FLASH_PAGE_SIZE - pos);
-        if (page != cachedPage)
+        if (!isCached(page))
         {
-            if (dirty)
+            if (cache.dirty)
             {
                 if (flashGuard)
                 {
                     flashGuard->pauseForFlash();
                 }
-                writeBack();
+                cache.owner->writeBack(); // maybe the page of another backend
                 if (flashGuard)
                 {
                     flashGuard->resumeAfterFlash();
@@ -78,10 +102,10 @@ void UserEepromFlash::write(uint32_t offset, const uint8_t* buffer, uint32_t len
             }
             load(page);
         }
-        if (memcmp(cache + pos, buffer, count) != 0)
+        if (memcmp(cache.data + pos, buffer, count) != 0)
         {
-            memcpy(cache + pos, buffer, count);
-            dirty = true;
+            memcpy(cache.data + pos, buffer, count);
+            cache.dirty = true;
         }
         offset += count;
         buffer += count;
@@ -91,7 +115,7 @@ void UserEepromFlash::write(uint32_t offset, const uint8_t* buffer, uint32_t len
 
 void UserEepromFlash::flush()
 {
-    if (dirty)
+    if ((cache.owner == this) && cache.dirty)
     {
         writeBack();
     }
@@ -99,17 +123,18 @@ void UserEepromFlash::flush()
 
 void UserEepromFlash::load(const uint32_t page)
 {
-    cachedPage = NO_PAGE; // the bus interrupt may read meanwhile, from the flash then
+    cache.owner = nullptr; // the bus interrupt may read meanwhile, from the flash then
     if (valid)
     {
-        memcpy(cache, flashAddress(page * FLASH_PAGE_SIZE), FLASH_PAGE_SIZE);
+        memcpy(cache.data, flashAddress(page * FLASH_PAGE_SIZE), FLASH_PAGE_SIZE);
     }
     else
     {
-        memset(cache, 0, FLASH_PAGE_SIZE);
+        memset(cache.data, 0, FLASH_PAGE_SIZE);
     }
-    cachedPage = page;
-    dirty = false;
+    cache.page = page;
+    cache.dirty = false;
+    cache.owner = this;
 }
 
 void UserEepromFlash::writeBack()
@@ -120,12 +145,12 @@ void UserEepromFlash::writeBack()
         return;
     }
 
-    if (iapErasePage(iapPageOfAddress(flashAddress(cachedPage * FLASH_PAGE_SIZE))) != IAP_SUCCESS)
+    if (iapErasePage(iapPageOfAddress(flashAddress(cache.page * FLASH_PAGE_SIZE))) != IAP_SUCCESS)
     {
         fatalError();
     }
-    program(cachedPage);
-    dirty = false;
+    program(cache.page);
+    cache.dirty = false;
 }
 
 void UserEepromFlash::format()
@@ -134,11 +159,11 @@ void UserEepromFlash::format()
     {
         fatalError();
     }
-    const uint32_t changedPage = cachedPage;
+    const uint32_t changedPage = cache.page;
     program(changedPage);
 
-    cachedPage = NO_PAGE; // the cache doesn't hold the changed page anymore
-    memset(cache, 0, FLASH_PAGE_SIZE);
+    cache.owner = nullptr; // the cache doesn't hold the changed page anymore
+    memset(cache.data, 0, FLASH_PAGE_SIZE);
     const uint32_t pages = (size() + FLASH_PAGE_SIZE - 1) / FLASH_PAGE_SIZE;
     for (uint32_t page = 0; page < pages; page++)
     {
@@ -149,19 +174,18 @@ void UserEepromFlash::format()
     }
 
     // The cache holds zeros now, they aren't the content of the changed page anymore
-    cachedPage = NO_PAGE;
-    dirty = false;
+    cache.dirty = false;
     valid = true;
 }
 
 void UserEepromFlash::program(const uint32_t page)
 {
     const uint32_t lastOffset = size() - 1;
-    if (page == lastOffset / FLASH_PAGE_SIZE)
+    if (marker && (page == lastOffset / FLASH_PAGE_SIZE))
     {
-        cache[lastOffset % FLASH_PAGE_SIZE] = 0; // mark the user EEPROM as valid, like the mirror does
+        cache.data[lastOffset % FLASH_PAGE_SIZE] = 0; // mark the user EEPROM as valid, like the mirror does
     }
-    if (iapProgram(flashAddress(page * FLASH_PAGE_SIZE), cache, FLASH_PAGE_SIZE) != IAP_SUCCESS)
+    if (iapProgram(flashAddress(page * FLASH_PAGE_SIZE), cache.data, FLASH_PAGE_SIZE) != IAP_SUCCESS)
     {
         fatalError();
     }

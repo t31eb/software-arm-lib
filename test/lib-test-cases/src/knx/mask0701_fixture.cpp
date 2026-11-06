@@ -70,7 +70,7 @@ void Mask0701Fixture::boot()
     }
     else
     {
-        bcu = flashBackend() ? new MASK0701(new UserEepromFlash(UserEepromMASK0701::SIZE)) : new MASK0701();
+        bcu = flashBackend() ? new MASK0701(new UserEepromFlash(UserEepromMASK0701::SIZE, *new FlashPageCache())) : new MASK0701();
     }
     bcuUnderTest = bcu;
     bcu->begin(MANUFACTURER, DEVICE_TYPE, VERSION);

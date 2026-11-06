@@ -29,9 +29,9 @@
  * A further range of non-volatile configuration memory beside the user EEPROM, e.g. a segment of the product database
  * outside of it (MultiSensorAktor: 0x6000-0x6EFF).
  *
- * @details The replacement of a @ref MemMapper range for applications with an external EEPROM: the bytes are kept by
- *          a @ref UserEepromBackend, e.g. a second @ref UserEepromSpi in the same chip, without a RAM buffer and
- *          without a flash sector. Register it with @ref BcuDefault::setUserMemoryExtension; memory telegrams and
+ * @details The replacement of a @ref MemMapper range: the bytes are kept by a @ref UserEepromBackend, e.g. a second
+ *          @ref UserEepromSpi in the same chip (no RAM buffer, no flash sector), or a range of the flash
+ *          (@ref UserEepromFlash) sharing the cache page of the user EEPROM, at the place where the MemMapper kept it. Register it with @ref BcuDefault::setUserMemoryExtension; memory telegrams and
  *          @ref BcuDefault::readUserMemory / @ref BcuDefault::writeUserMemory reach it then, and it is flushed before
  *          the user EEPROM (the load states).
  */

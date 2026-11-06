@@ -71,7 +71,8 @@ TEST_CASE("User EEPROM in the flash with a cache of one page", "[userEeprom][fla
     SECTION("an empty flash reads as zeros and isn't touched by writes before flush")
     {
         IAP_Init_Flash(0xff);
-        UserEepromFlash flash(SIZE);
+        FlashPageCache cache;
+        UserEepromFlash flash(SIZE, cache);
         REQUIRE(readAll(flash) == std::vector<uint8_t>(SIZE, 0));
 
         iap_program_log_count = 0;
@@ -89,7 +90,8 @@ TEST_CASE("User EEPROM in the flash with a cache of one page", "[userEeprom][fla
         const auto expected = flashContent();
 
         IAP_Init_Flash(0xff);
-        UserEepromFlash flash(SIZE);
+        FlashPageCache cache;
+        UserEepromFlash flash(SIZE, cache);
         write(flash, 0x370, {1, 2, 3});
         flash.flush();
         REQUIRE(flashContent() == expected);
@@ -101,14 +103,16 @@ TEST_CASE("User EEPROM in the flash with a cache of one page", "[userEeprom][fla
     {
         prepareValidFlash();
         const auto mirrorBytes = readAll(UserEepromMirror(SIZE, FLASH_SECTOR_SIZE));
-        UserEepromFlash flash(SIZE);
+        FlashPageCache cache;
+        UserEepromFlash flash(SIZE, cache);
         REQUIRE(readAll(flash) == mirrorBytes);
     }
 
     SECTION("flush writes back only the changed page")
     {
         prepareValidFlash();
-        UserEepromFlash flash(SIZE);
+        FlashPageCache cache;
+        UserEepromFlash flash(SIZE, cache);
         iap_program_log_count = 0;
         write(flash, 0x371, {0xAA, 0xBB});
         REQUIRE(readAll(flash)[0x371] == 0xAA);
@@ -127,7 +131,8 @@ TEST_CASE("User EEPROM in the flash with a cache of one page", "[userEeprom][fla
     SECTION("writing to another page writes the changed page back, asking the guard")
     {
         prepareValidFlash();
-        UserEepromFlash flash(SIZE);
+        FlashPageCache cache;
+        UserEepromFlash flash(SIZE, cache);
         CountingGuard guard;
         flash.setFlashGuard(&guard);
         iap_program_log_count = 0;
@@ -150,7 +155,8 @@ TEST_CASE("User EEPROM in the flash with a cache of one page", "[userEeprom][fla
     SECTION("a write across a page border writes back the first page")
     {
         prepareValidFlash();
-        UserEepromFlash flash(SIZE);
+        FlashPageCache cache;
+        UserEepromFlash flash(SIZE, cache);
         iap_program_log_count = 0;
         write(flash, 0x1FE, {1, 2, 3, 4});
         REQUIRE(iap_program_log_count == 1);
@@ -162,7 +168,8 @@ TEST_CASE("User EEPROM in the flash with a cache of one page", "[userEeprom][fla
     SECTION("unchanged bytes don't cause a write back")
     {
         prepareValidFlash();
-        UserEepromFlash flash(SIZE);
+        FlashPageCache cache;
+        UserEepromFlash flash(SIZE, cache);
         iap_program_log_count = 0;
         write(flash, 0x370, {static_cast<uint8_t>(0x370 * 7)});
         write(flash, 0x470, {static_cast<uint8_t>(0x470 * 7)});
@@ -173,7 +180,8 @@ TEST_CASE("User EEPROM in the flash with a cache of one page", "[userEeprom][fla
     SECTION("reload discards the changes in the cache, but not those written back already")
     {
         prepareValidFlash();
-        UserEepromFlash flash(SIZE);
+        FlashPageCache cache;
+        UserEepromFlash flash(SIZE, cache);
         write(flash, 0x270, {0xDD});
         write(flash, 0x370, {0xEE}); // writes back the page with 0x270
         flash.reload();
@@ -184,11 +192,116 @@ TEST_CASE("User EEPROM in the flash with a cache of one page", "[userEeprom][fla
     SECTION("the last byte reads as 0 after a flush, like with the mirror")
     {
         prepareValidFlash();
-        UserEepromFlash flash(SIZE);
+        FlashPageCache cache;
+        UserEepromFlash flash(SIZE, cache);
         write(flash, SIZE - 1, {0x55});
         REQUIRE(readAll(flash)[SIZE - 1] == 0x55);
         flash.flush();
         REQUIRE(readAll(flash)[SIZE - 1] == 0);
+    }
+}
+
+TEST_CASE("A range of the flash with a cache shared with the user EEPROM", "[userEeprom][flashBackend]")
+{
+    // Like the MultiSensorAktor without EEPROM: the segment 0x6000-0x6EFF at 0xE100, where its MemMapper keeps it
+    constexpr uint32_t RANGE = 0xE100;
+    constexpr uint32_t RANGE_SIZE = 0xF00;
+    const auto rangeContent = [] { return std::vector<uint8_t>(&FLASH[RANGE], &FLASH[RANGE + RANGE_SIZE]); };
+
+    SECTION("the range reads the flash as it is, an erased flash as 0xff")
+    {
+        IAP_Init_Flash(0xff);
+        FLASH[RANGE + 0x10] = 0x42;
+        FlashPageCache cache;
+        UserEepromFlash range(RANGE_SIZE, cache, RANGE);
+        std::vector<uint8_t> bytes(RANGE_SIZE);
+        range.read(0, bytes.data(), RANGE_SIZE);
+        std::vector<uint8_t> expected(RANGE_SIZE, 0xff);
+        expected[0x10] = 0x42;
+        REQUIRE(bytes == expected);
+    }
+
+    SECTION("a write back erases and programs only its page, without a valid marker")
+    {
+        IAP_Init_Flash(0xff);
+        FLASH[0xE000] = 0x9e; // e.g. the allocation table of a MemMapper before
+        FlashPageCache cache;
+        UserEepromFlash range(RANGE_SIZE, cache, RANGE);
+        iap_program_log_count = 0;
+        write(range, RANGE_SIZE - 2, {0x55, 0x66});
+        REQUIRE(FLASH[RANGE + RANGE_SIZE - 1] == 0xff);
+        range.flush();
+        REQUIRE(iap_program_log_count == 1);
+        REQUIRE(iap_program_log[0] == RANGE + RANGE_SIZE - PAGE);
+        REQUIRE(FLASH[RANGE + RANGE_SIZE - 2] == 0x55);
+        REQUIRE(FLASH[RANGE + RANGE_SIZE - 1] == 0x66); // no marker
+        REQUIRE(FLASH[RANGE + RANGE_SIZE - 3] == 0xff); // the rest of the page as it was
+        REQUIRE(FLASH[0xE000] == 0x9e);
+        range.reload();
+        std::vector<uint8_t> bytes(2);
+        range.read(RANGE_SIZE - 2, bytes.data(), 2);
+        REQUIRE(bytes == std::vector<uint8_t>{0x55, 0x66});
+    }
+
+    SECTION("a write to the other backend writes the changed page back, asking the guard of the writer")
+    {
+        prepareValidFlash();
+        FlashPageCache cache;
+        UserEepromFlash user(SIZE, cache);
+        UserEepromFlash range(RANGE_SIZE, cache, RANGE);
+        CountingGuard userGuard;
+        CountingGuard rangeGuard;
+        user.setFlashGuard(&userGuard);
+        range.setFlashGuard(&rangeGuard);
+        iap_program_log_count = 0;
+
+        write(user, 0x370, {0xAA});
+        write(range, 0x010, {0xBB}); // the page of the user EEPROM goes to the flash
+        REQUIRE(iap_program_log_count == 1);
+        REQUIRE(iap_program_log[0] == SECTOR + 0x300);
+        REQUIRE(FLASH[SECTOR + 0x370] == 0xAA);
+        REQUIRE(rangeGuard.pauses == 1);
+        REQUIRE(userGuard.pauses == 0);
+        REQUIRE(readAll(user)[0x370] == 0xAA); // from the flash now
+
+        user.flush(); // the cache holds a page of the range
+        REQUIRE(iap_program_log_count == 1);
+        range.flush();
+        REQUIRE(iap_program_log_count == 2);
+        REQUIRE(iap_program_log[1] == RANGE);
+        REQUIRE(FLASH[RANGE + 0x010] == 0xBB);
+    }
+
+    SECTION("the changed page of the range goes to the flash before the user EEPROM formats its sector")
+    {
+        IAP_Init_Flash(0xff);
+        FlashPageCache cache;
+        UserEepromFlash user(SIZE, cache);
+        UserEepromFlash range(RANGE_SIZE, cache, RANGE);
+        write(range, 0x200, {1, 2, 3});
+        write(user, 0x100, {4});
+        user.flush();
+        REQUIRE(FLASH[RANGE + 0x200] == 1);
+        REQUIRE(FLASH[RANGE + 0x202] == 3);
+        REQUIRE(readAll(user)[0x100] == 4);
+        REQUIRE(FLASH[SECTOR + SIZE - 1] == 0);
+        auto expected = std::vector<uint8_t>(RANGE_SIZE, 0xff);
+        expected[0x200] = 1;
+        expected[0x201] = 2;
+        expected[0x202] = 3;
+        REQUIRE(rangeContent() == expected);
+    }
+
+    SECTION("reload of one backend keeps the changes of the other in the cache")
+    {
+        prepareValidFlash();
+        FlashPageCache cache;
+        UserEepromFlash user(SIZE, cache);
+        UserEepromFlash range(RANGE_SIZE, cache, RANGE);
+        write(range, 0x020, {0x77});
+        user.reload();
+        range.flush();
+        REQUIRE(FLASH[RANGE + 0x020] == 0x77);
     }
 }
 
@@ -206,7 +319,8 @@ TEST_CASE("User EEPROM in the flash behaves like the mirror", "[userEeprom][flas
         const auto keepFlash = [](std::vector<uint8_t>& flash) { memcpy(flash.data(), FLASH, flash.size()); };
 
         UserEepromMirror mirror(SIZE, FLASH_SECTOR_SIZE);
-        UserEepromFlash flash(SIZE);
+        FlashPageCache cache;
+        UserEepromFlash flash(SIZE, cache);
 
         for (int step = 0; step < 300; step++)
         {
