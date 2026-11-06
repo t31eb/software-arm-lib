@@ -34,8 +34,10 @@
  *          Layout in the chip, starting at @p chipAddress:
  *          @code
  *            +0   header: "SBUE", layout version, 0, size (16 bit, low byte first), CRC-16/CCITT of these 8 bytes
- *            +16  the user EEPROM, @ref size bytes
+ *            +128 the user EEPROM, @ref size bytes
  *          @endcode
+ *          The header has a write page of its own (128 bytes on the M95512-R): a power loss in a write cycle destroys
+ *          the whole page, but data writes never touch the header page.
  *          The CRC only covers the header. It tells a used chip from an empty or foreign one, which reads as zeros
  *          like an empty flash. The first write formats it: zeros first, the header last. A CRC over the data would
  *          have to follow every write, and a power loss in between would invalidate the whole configuration.
@@ -78,8 +80,8 @@ public:
     /** @return Number of reads before @ref begin, they returned zeros */
     [[nodiscard]] uint32_t earlyReads() const { return earlyReadCount; }
 
-    static constexpr uint32_t HEADER_SIZE = 16;  //!< bytes reserved for the header in front of the data
-    static constexpr uint8_t LAYOUT_VERSION = 1; //!< version of the layout in the chip
+    static constexpr uint32_t HEADER_SIZE = 128; //!< bytes reserved for the header in front of the data, one write page
+    static constexpr uint8_t LAYOUT_VERSION = 2; //!< version of the layout in the chip (1: data at 16, never released)
 
 private:
     /** The 8 bytes of the header with its CRC, 10 bytes in total */

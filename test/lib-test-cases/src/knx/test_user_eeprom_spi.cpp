@@ -108,8 +108,31 @@ TEST_CASE("User EEPROM in an SPI EEPROM", "[userEeprom][spiBackend]")
         board.backend.begin();
         const auto cycles = chip.writeCycles;
         write(board.backend, 0, {1});
-        // 25 pages of data (16 bytes header in front), the header, the byte
-        REQUIRE(chip.writeCycles - cycles == 27);
+        // 24 pages of data (the header has a page of its own), the header, the byte
+        REQUIRE(chip.writeCycles - cycles == 26);
+    }
+
+    SECTION("a power loss while the first data page is written keeps the header")
+    {
+        {
+            Board board(chip);
+            board.backend.begin();
+            write(board.backend, 0x10, {0x42});
+        }
+        for (uint64_t failAt = 0; failAt < 40; failAt++)
+        {
+            {
+                Board board(chip);
+                board.backend.begin();
+                chip.powerFailAfterBytes(failAt);
+                write(board.backend, 0x00, {static_cast<uint8_t>(failAt + 1)}); // the page the header shared before
+            }
+            chip.powerOn();
+            Board rebooted(chip);
+            rebooted.backend.begin();
+            INFO("power loss at bus byte " << failAt);
+            REQUIRE(rebooted.backend.formatted());
+        }
     }
 
     SECTION("a corrupted header makes the chip read as empty")
